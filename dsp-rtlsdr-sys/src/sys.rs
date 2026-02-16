@@ -4,6 +4,7 @@ use crate::*;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+#[doc(hidden)]
 pub struct rtlsdr_dev {
     _unused: [u8; 0],
 }
