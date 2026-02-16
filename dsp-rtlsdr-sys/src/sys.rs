@@ -72,7 +72,7 @@ unsafe extern "C" {
     /// ## Params
     /// - `dev`: pointer to receive the opened device
     /// - `index`: index of device to open.
-    pub fn rtlsdr_open(dev: *mut *mut rtlsdr_dev_t, index: u32) -> c_int;
+    pub fn rtlsdr_open(dev: *mut rtlsdr_dev_t, index: u32) -> c_int;
 
     /// Close the RTLSDR device.
     ///
@@ -81,7 +81,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_close(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_close(dev: rtlsdr_dev_t) -> c_int;
 
     /// Set crystal oscillator frequencies used for the RTL2832 and the tuner IC.
     ///
@@ -98,7 +98,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_xtal_freq(dev: *mut rtlsdr_dev_t, rtl_freq: u32, tuner_freq: u32) -> c_int;
+    pub fn rtlsdr_set_xtal_freq(dev: rtlsdr_dev_t, rtl_freq: u32, tuner_freq: u32) -> c_int;
 
     /// Get crystal oscillator frequencies used for the RTL2832 and the tuner IC.
     ///
@@ -112,7 +112,7 @@ unsafe extern "C" {
     /// ## Return Value
     /// return `0` on success
     pub fn rtlsdr_get_xtal_freq(
-        dev: *mut rtlsdr_dev_t,
+        dev: rtlsdr_dev_t,
         rtl_freq: *mut u32,
         tuner_freq: *mut u32,
     ) -> c_int;
@@ -130,7 +130,7 @@ unsafe extern "C" {
     /// ## Return Value
     /// return `0` on success
     pub fn rtlsdr_get_usb_strings(
-        dev: *mut rtlsdr_dev_t,
+        dev: rtlsdr_dev_t,
         manufact: *mut c_char,
         product: *mut c_char,
         serial: *mut c_char,
@@ -149,12 +149,7 @@ unsafe extern "C" {
     /// - `-1` if device handle is invalid
     /// - `-2` if EEPROM size is exceeded
     /// - `-3` if no EEPROM was found
-    pub fn rtlsdr_write_eeprom(
-        dev: *mut rtlsdr_dev_t,
-        data: *mut u8,
-        offset: u8,
-        len: u16,
-    ) -> c_int;
+    pub fn rtlsdr_write_eeprom(dev: rtlsdr_dev_t, data: *mut u8, offset: u8, len: u16) -> c_int;
 
     /// Read the device EEPROM.
     ///
@@ -169,8 +164,7 @@ unsafe extern "C" {
     /// - `-1` if device handle is invalid
     /// - `-2` if EEPROM size is exceeded
     /// - `-3` if no EEPROM was found
-    pub fn rtlsdr_read_eeprom(dev: *mut rtlsdr_dev_t, data: *mut u8, offset: u8, len: u16)
-    -> c_int;
+    pub fn rtlsdr_read_eeprom(dev: rtlsdr_dev_t, data: *mut u8, offset: u8, len: u16) -> c_int;
 
     /// Set the frequency the device is tuned to.
     ///
@@ -180,7 +174,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_center_freq(dev: *mut rtlsdr_dev_t, freq: u32) -> c_int;
+    pub fn rtlsdr_set_center_freq(dev: rtlsdr_dev_t, freq: u32) -> c_int;
 
     /// Get actual frequency the device is tuned to.
     ///
@@ -189,7 +183,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return 0 on error, frequency in Hz otherwise
-    pub fn rtlsdr_get_center_freq(dev: *mut rtlsdr_dev_t) -> u32;
+    pub fn rtlsdr_get_center_freq(dev: rtlsdr_dev_t) -> u32;
 
     /// Set the frequency correction value for the device.
     ///
@@ -199,7 +193,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_freq_correction(dev: *mut rtlsdr_dev_t, ppm: c_int) -> c_int;
+    pub fn rtlsdr_set_freq_correction(dev: rtlsdr_dev_t, ppm: c_int) -> c_int;
 
     /// Get actual frequency correction value of the device.
     ///
@@ -208,7 +202,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return correction value in parts per million (ppm)
-    pub fn rtlsdr_get_freq_correction(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_get_freq_correction(dev: rtlsdr_dev_t) -> c_int;
 
     /// Get the tuner type.
     ///
@@ -217,7 +211,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return [RTLSDR_TUNER_UNKNOWN] on error, tuner type otherwise
-    pub fn rtlsdr_get_tuner_type(dev: *mut rtlsdr_dev_t) -> rtlsdr_tuner;
+    pub fn rtlsdr_get_tuner_type(dev: rtlsdr_dev_t) -> rtlsdr_tuner;
 
     /// Get a list of gains supported by the tuner.
     ///
@@ -230,7 +224,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return <= `0` on error, number of available (returned) gain values otherwise
-    pub fn rtlsdr_get_tuner_gains(dev: *mut rtlsdr_dev_t, gains: *mut c_int) -> c_int;
+    pub fn rtlsdr_get_tuner_gains(dev: rtlsdr_dev_t, gains: *mut c_int) -> c_int;
 
     /// Set the gain for the device.
     ///
@@ -248,7 +242,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_tuner_gain(dev: *mut rtlsdr_dev_t, gain: c_int) -> c_int;
+    pub fn rtlsdr_set_tuner_gain(dev: rtlsdr_dev_t, gain: c_int) -> c_int;
 
     /// Set the bandwidth for the device.
     ///
@@ -258,7 +252,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_tuner_bandwidth(dev: *mut rtlsdr_dev_t, bw: u32) -> c_int;
+    pub fn rtlsdr_set_tuner_bandwidth(dev: rtlsdr_dev_t, bw: u32) -> c_int;
 
     /// Get actual gain the device is configured to.
     ///
@@ -267,7 +261,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on error, gain in tenths of a dB, 115 means 11.5 dB.
-    pub fn rtlsdr_get_tuner_gain(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_get_tuner_gain(dev: rtlsdr_dev_t) -> c_int;
 
     /// Set the intermediate frequency gain for the device.
     ///
@@ -278,7 +272,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_tuner_if_gain(dev: *mut rtlsdr_dev_t, stage: c_int, gain: c_int) -> c_int;
+    pub fn rtlsdr_set_tuner_if_gain(dev: rtlsdr_dev_t, stage: c_int, gain: c_int) -> c_int;
 
     /// Set the gain mode (automatic/manual) for the device.
     ///
@@ -290,7 +284,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_tuner_gain_mode(dev: *mut rtlsdr_dev_t, manual: c_int) -> c_int;
+    pub fn rtlsdr_set_tuner_gain_mode(dev: rtlsdr_dev_t, manual: c_int) -> c_int;
 
     /// Set the sample rate for the device.
     ///
@@ -305,7 +299,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success, `-EINVAL` on invalid rate
-    pub fn rtlsdr_set_sample_rate(dev: *mut rtlsdr_dev_t, rate: u32) -> c_int;
+    pub fn rtlsdr_set_sample_rate(dev: rtlsdr_dev_t, rate: u32) -> c_int;
 
     /// Get actual sample rate the device is configured to.
     ///
@@ -314,7 +308,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on error, sample rate in Hz otherwise
-    pub fn rtlsdr_get_sample_rate(dev: *mut rtlsdr_dev_t) -> u32;
+    pub fn rtlsdr_get_sample_rate(dev: rtlsdr_dev_t) -> u32;
 
     /// Enable test mode that returns an 8 bit counter instead of the samples.
     ///
@@ -328,7 +322,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_testmode(dev: *mut rtlsdr_dev_t, on: c_int) -> c_int;
+    pub fn rtlsdr_set_testmode(dev: rtlsdr_dev_t, on: c_int) -> c_int;
 
     /// Enable or disable the internal digital AGC of the RTL2832.
     ///
@@ -340,7 +334,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_agc_mode(dev: *mut rtlsdr_dev_t, on: c_int) -> c_int;
+    pub fn rtlsdr_set_agc_mode(dev: rtlsdr_dev_t, on: c_int) -> c_int;
 
     /// Enable or disable the direct sampling mode.
     ///
@@ -358,7 +352,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_direct_sampling(dev: *mut rtlsdr_dev_t, on: c_int) -> c_int;
+    pub fn rtlsdr_set_direct_sampling(dev: rtlsdr_dev_t, on: c_int) -> c_int;
 
     /// Get state of the direct sampling mode.
     ///
@@ -370,7 +364,7 @@ unsafe extern "C" {
     /// - `0` means disabled
     /// - `1` I-ADC input enabled
     /// - `2` Q-ADC input enabled
-    pub fn rtlsdr_get_direct_sampling(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_get_direct_sampling(dev: rtlsdr_dev_t) -> c_int;
 
     /// Enable or disable offset tuning for zero-IF tuners.
     ///
@@ -384,7 +378,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_set_offset_tuning(dev: *mut rtlsdr_dev_t, on: c_int) -> c_int;
+    pub fn rtlsdr_set_offset_tuning(dev: rtlsdr_dev_t, on: c_int) -> c_int;
 
     /// Get state of the offset tuning mode.
     ///
@@ -395,12 +389,12 @@ unsafe extern "C" {
     /// - `-1` on error
     /// - `0` means disabled
     /// - `1` enabled
-    pub fn rtlsdr_get_offset_tuning(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_get_offset_tuning(dev: rtlsdr_dev_t) -> c_int;
 
-    pub fn rtlsdr_reset_buffer(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_reset_buffer(dev: rtlsdr_dev_t) -> c_int;
 
     pub fn rtlsdr_read_sync(
-        dev: *mut rtlsdr_dev_t,
+        dev: rtlsdr_dev_t,
         buf: *mut c_void,
         len: c_int,
         n_read: *mut c_int,
@@ -421,7 +415,7 @@ unsafe extern "C" {
     /// ## Return Value
     /// return `0` on success
     pub fn rtlsdr_wait_async(
-        dev: *mut rtlsdr_dev_t,
+        dev: rtlsdr_dev_t,
         cb: rtlsdr_read_async_cb_t,
         ctx: *mut c_void,
     ) -> c_int;
@@ -445,7 +439,7 @@ unsafe extern "C" {
     /// ## Return Value
     /// return `0` on success
     pub fn rtlsdr_read_async(
-        dev: *mut rtlsdr_dev_t,
+        dev: rtlsdr_dev_t,
         cb: rtlsdr_read_async_cb_t,
         ctx: *mut c_void,
         buf_num: u32,
@@ -459,7 +453,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `0` on success
-    pub fn rtlsdr_cancel_async(dev: *mut rtlsdr_dev_t) -> c_int;
+    pub fn rtlsdr_cancel_async(dev: rtlsdr_dev_t) -> c_int;
 
     /// Enable or disable the bias tee on `GPIO PIN 0`.
     ///
@@ -471,7 +465,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `-1` if device is not initialized. `0` otherwise.
-    pub fn rtlsdr_set_bias_tee(dev: *mut rtlsdr_dev_t, on: c_int) -> c_int;
+    pub fn rtlsdr_set_bias_tee(dev: rtlsdr_dev_t, on: c_int) -> c_int;
 
     /// Enable or disable the bias tee on the given GPIO pin.
     ///
@@ -484,5 +478,5 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// return `-1` if device is not initialized. `0` otherwise.
-    pub fn rtlsdr_set_bias_tee_gpio(dev: *mut rtlsdr_dev_t, gpio: c_int, on: c_int) -> c_int;
+    pub fn rtlsdr_set_bias_tee_gpio(dev: rtlsdr_dev_t, gpio: c_int, on: c_int) -> c_int;
 }
