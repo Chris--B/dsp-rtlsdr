@@ -31,7 +31,7 @@ pub type rtlsdr_read_async_cb_t = Option<
 
 unsafe extern "C" {
 
-    pub fn rtlsdr_get_device_count() -> u32;
+    pub safe fn rtlsdr_get_device_count() -> u32;
 
     pub fn rtlsdr_get_device_name(index: u32) -> *const c_char;
 

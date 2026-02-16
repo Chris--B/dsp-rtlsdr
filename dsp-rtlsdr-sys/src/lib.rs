@@ -18,6 +18,11 @@ impl rtlsdr_dev_t {
     pub fn null() -> Self {
         Self(core::ptr::null_mut())
     }
+
+    /// Gets the inner pointer-handle that the rtlsdr C API expects
+    pub fn raw(self) -> *mut rtlsdr_dev {
+        self.0
+    }
 }
 
 pub fn strerror(err: c_int) -> *const c_char {

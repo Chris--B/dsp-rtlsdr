@@ -89,7 +89,6 @@ fn main() {
         for i in 0..32 {
             print!("    ");
             for j in 0..32 {
-                // let sample = f32::from_bits(buf[32 * i + j]);
                 print!("0x{:.02x} ", buf[32 * i + j]);
             }
             println!();
