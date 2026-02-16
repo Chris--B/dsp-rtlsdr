@@ -8,28 +8,7 @@ fn main() {
         }
     }
 
-    link_libusb();
     link_rtlsdr();
-}
-
-fn link_libusb() {
-    #![allow(clippy::needless_return)]
-
-    if try_find_link_paths("DSP_LIBUSB_LIB") {
-        println!("Found librtsdr libs with DSP_LIBUSB_LIB");
-        return;
-    }
-
-    if let Ok(_pkg) = pkg_config::Config::new()
-        .atleast_version("1.0")
-        .probe("libusb-1.0")
-    {
-        println!("Found libusb-1.0 libs with pkg-config");
-        return;
-    }
-
-    println!("cargo::rustc-link-lib=usb-1.0");
-    println!("cargo::warning=Did NOT find libusb-1.0 search path.");
 }
 
 fn link_rtlsdr() {

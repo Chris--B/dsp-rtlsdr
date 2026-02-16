@@ -10,6 +10,23 @@ version = "0.1.0"
 name = "dsp-rtlsdr-sys"
 version = "0.1.0"
 dependencies = [
+ "libusb-sys",
+ "pkg-config",
+]
+
+[[package]]
+name = "libc"
+version = "0.2.182"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
+
+[[package]]
+name = "libusb-sys"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c53b6582563d64ad3e692f54ef95239c3ea8069e82c9eb70ca948869a7ad767"
+dependencies = [
+ "libc",
  "pkg-config",
 ]
 

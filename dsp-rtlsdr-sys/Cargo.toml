@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+libusb-sys = "0.2"
 
 [build-dependencies]
 pkg-config = "0.3"

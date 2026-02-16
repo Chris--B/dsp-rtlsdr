@@ -3,6 +3,8 @@
 mod sys;
 pub use sys::*;
 
+pub use libusb_sys;
+
 use ::core::ffi::c_char;
 use ::core::ffi::c_void;
 use ::core::ffi::{c_int, c_uint};
@@ -19,9 +21,5 @@ impl rtlsdr_dev_t {
 }
 
 pub fn strerror(err: c_int) -> *const c_char {
-    unsafe extern "C" {
-        fn libusb_strerror(e: c_int) -> *const c_char;
-    }
-
-    unsafe { libusb_strerror(err) }
+    unsafe { libusb_sys::libusb_strerror(err) }
 }
