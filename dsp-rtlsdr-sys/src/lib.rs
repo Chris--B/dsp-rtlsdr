@@ -17,3 +17,7 @@ impl rtlsdr_dev_t {
         Self(core::ptr::null_mut())
     }
 }
+
+pub fn strerror(err: c_int) -> *const c_char {
+    todo!("oops err == {err}");
+}
