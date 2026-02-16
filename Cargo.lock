@@ -5,10 +5,22 @@ version = 4
 [[package]]
 name = "dsp-rtlsdr-rs"
 version = "0.1.0"
+dependencies = [
+ "dsp-rtlsdr-sys 0.1.0 (git+https://github.com/Chris--B/dsp-rtlsdr)",
+]
 
 [[package]]
 name = "dsp-rtlsdr-sys"
 version = "0.1.0"
+dependencies = [
+ "libusb-sys",
+ "pkg-config",
+]
+
+[[package]]
+name = "dsp-rtlsdr-sys"
+version = "0.1.0"
+source = "git+https://github.com/Chris--B/dsp-rtlsdr#fe15185ca210fce3989bdac7fc20c50691469379"
 dependencies = [
  "libusb-sys",
  "pkg-config",
