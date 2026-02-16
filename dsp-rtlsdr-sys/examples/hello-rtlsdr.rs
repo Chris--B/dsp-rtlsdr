@@ -9,7 +9,7 @@ macro_rules! log_rtlsdr_err {
         let err = $err;
         if err != 0 {
             let err_text = CStr::from_ptr(dsp_rtlsdr_sys::strerror(err));
-            println!("{args}: err={err} {err_text:?}");
+            println!("{args}: {err_text:?} ({err})");
         }
     };
 }
@@ -17,7 +17,7 @@ macro_rules! log_rtlsdr_err {
 fn main() {
     unsafe {
         let num_devices = rtlsdr_get_device_count();
-        println!("Found {num_devices} device(s)");
+        println!("Found {num_devices} device(s), is your device connected?");
         if num_devices == 0 {
             return;
         }
@@ -81,8 +81,10 @@ fn main() {
         let mut num_samples = 0;
         err = rtlsdr_read_sync(dev, buf.as_mut_ptr(), buf.len() as i32, &mut num_samples);
         log_rtlsdr_err!(err, "rtlsdr_read_sync");
-
         println!("Sync: Read {} samples", num_samples);
+        if err < 0 {
+            return;
+        }
 
         for i in 0..32 {
             print!("    ");

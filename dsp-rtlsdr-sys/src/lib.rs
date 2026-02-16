@@ -19,5 +19,9 @@ impl rtlsdr_dev_t {
 }
 
 pub fn strerror(err: c_int) -> *const c_char {
-    todo!("oops err == {err}");
+    unsafe extern "C" {
+        fn libusb_strerror(e: c_int) -> *const c_char;
+    }
+
+    unsafe { libusb_strerror(err) }
 }

@@ -1,18 +1,4 @@
 fn main() {
-    if try_find_link_paths("DSP_RTLSDR_LIB") {
-        println!("Found librtsdr libs with DSP_RTLSDR_LIB");
-        return;
-    }
-
-    if let Ok(_rtlsdr_pkg) = pkg_config::Config::new()
-        .atleast_version("2.0")
-        .probe("librtlsdr")
-    {
-        println!("Found librtsdr libs with pkg-config");
-        return;
-    }
-
-    println!("cargo::rustc-link-lib=rtlsdr");
     for maybe_path in [
         "/usr/local/lib64", //
         "/usr/local/lib",   //
@@ -22,6 +8,45 @@ fn main() {
         }
     }
 
+    link_libusb();
+    link_rtlsdr();
+}
+
+fn link_libusb() {
+    #![allow(clippy::needless_return)]
+
+    if try_find_link_paths("DSP_LIBUSB_LIB") {
+        println!("Found librtsdr libs with DSP_LIBUSB_LIB");
+        return;
+    }
+
+    if let Ok(_pkg) = pkg_config::Config::new()
+        .atleast_version("1.0")
+        .probe("libusb-1.0")
+    {
+        println!("Found libusb-1.0 libs with pkg-config");
+        return;
+    }
+
+    println!("cargo::rustc-link-lib=usb-1.0");
+    println!("cargo::warning=Did NOT find libusb-1.0 search path.");
+}
+
+fn link_rtlsdr() {
+    if try_find_link_paths("DSP_RTLSDR_LIB") {
+        println!("Found librtsdr libs with DSP_RTLSDR_LIB");
+        return;
+    }
+
+    if let Ok(_pkg) = pkg_config::Config::new()
+        .atleast_version("2.0")
+        .probe("librtlsdr")
+    {
+        println!("Found librtsdr libs with pkg-config");
+        return;
+    }
+
+    println!("cargo::rustc-link-lib=rtlsdr");
     println!(
         "cargo::warning=Did NOT find librtsdr search path. You may need to set DSP_RTLSDR_LIB if linking fails."
     );
