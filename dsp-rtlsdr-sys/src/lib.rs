@@ -1,14 +1,19 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![no_std]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod sys;
+pub use sys::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+use ::core::ffi::c_char;
+use ::core::ffi::c_void;
+use ::core::ffi::{c_int, c_uint};
+
+#[allow(nonstandard_style)]
+#[repr(transparent)]
+#[derive(Copy, Clone)]
+pub struct rtlsdr_dev_t(*mut rtlsdr_dev);
+
+impl rtlsdr_dev_t {
+    pub fn null() -> Self {
+        Self(core::ptr::null_mut())
     }
 }
