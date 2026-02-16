@@ -1,15 +1,16 @@
 use dsp_rtlsdr_sys::*;
 
 use std::ffi::CStr;
-use std::ffi::{c_char, c_void};
+use std::ffi::c_char;
 
 macro_rules! log_rtlsdr_err {
     ($err:expr, $($args:tt)*) => {
         let args =  format_args!($($args)*);
         let err = $err;
-        let err_text = CStr::from_ptr(dsp_rtlsdr_sys::strerror(err));
-        println!("{args}: err={err} {err_text:?}");
-
+        if err != 0 {
+            let err_text = CStr::from_ptr(dsp_rtlsdr_sys::strerror(err));
+            println!("{args}: err={err} {err_text:?}");
+        }
     };
 }
 
@@ -61,13 +62,13 @@ fn main() {
             return;
         }
 
-        // err = rtlsdr_reset_buffer(dev);
-        // log_rtlsdr_err!(err, "rtlsdr_reset_buffer");
+        err = rtlsdr_reset_buffer(dev);
+        log_rtlsdr_err!(err, "rtlsdr_reset_buffer");
 
         err = rtlsdr_set_sample_rate(dev, 2.048e6 /*Hz*/ as u32);
         log_rtlsdr_err!(err, "rtlsdr_set_sample_rate");
 
-        err = rtlsdr_set_center_freq(dev, 100e6 /*Hz*/ as u32);
+        err = rtlsdr_set_center_freq(dev, 99_500_000 /*Hz*/);
         log_rtlsdr_err!(err, "rtlsdr_set_center_freq");
 
         err = rtlsdr_set_freq_correction(dev, 60 /*PPM*/);
@@ -76,17 +77,21 @@ fn main() {
         err = rtlsdr_set_tuner_gain_mode(dev, 0 /*auto*/);
         log_rtlsdr_err!(err, "rtlsdr_set_tuner_gain_mode");
 
-        let mut buf = [0; 1024];
+        let mut buf = [0_u8; 1024];
         let mut num_samples = 0;
-        err = rtlsdr_read_sync(
-            dev,
-            buf.as_mut_ptr() as *mut c_void,
-            buf.len() as i32,
-            &mut num_samples,
-        );
+        err = rtlsdr_read_sync(dev, buf.as_mut_ptr(), buf.len() as i32, &mut num_samples);
         log_rtlsdr_err!(err, "rtlsdr_read_sync");
 
         println!("Sync: Read {} samples", num_samples);
+
+        for i in 0..32 {
+            print!("    ");
+            for j in 0..32 {
+                // let sample = f32::from_bits(buf[32 * i + j]);
+                print!("0x{:.02x} ", buf[32 * i + j]);
+            }
+            println!();
+        }
 
         rtlsdr_close(dev);
     }

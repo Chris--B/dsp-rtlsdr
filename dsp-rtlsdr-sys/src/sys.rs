@@ -395,7 +395,7 @@ unsafe extern "C" {
 
     pub fn rtlsdr_read_sync(
         dev: rtlsdr_dev_t,
-        buf: *mut c_void,
+        buf: *mut u8,
         len: c_int,
         n_read: *mut c_int,
     ) -> c_int;
