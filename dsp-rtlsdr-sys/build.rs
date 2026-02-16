@@ -19,6 +19,8 @@ fn link_rtlsdr() {
 
     if let Ok(_pkg) = pkg_config::Config::new()
         .atleast_version("2.0")
+        // librtlsdr is a thin wrapper around libusb and life is easier if we don't dynamically link it.
+        .statik(true)
         .probe("librtlsdr")
     {
         println!("Found librtsdr libs with pkg-config");
