@@ -51,6 +51,8 @@ fn main() -> dsp_rtlsdr_rs::Result<()> {
         //     }
         //     println!();
         // }
+
+        dev.close();
     }
 
     Ok(())

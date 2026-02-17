@@ -5,6 +5,7 @@ use sys::*;
 
 use std::ffi::CStr;
 use std::ffi::{c_char, c_int};
+use std::mem::ManuallyDrop;
 
 pub type Result<T, E = crate::RtlSdrError> = std::result::Result<T, E>;
 
@@ -184,6 +185,9 @@ impl RtlSdrDevice {
         unsafe {
             make_result("rtlsdr_close", rtlsdr_close(self.dev))?;
 
+            // Cannot let Drop run after we closed the device
+            let _ = ManuallyDrop::new(self);
+
             Ok(())
         }
     }
@@ -263,7 +267,12 @@ impl RtlSdrDevice {
     }
 }
 
-/// Calls [`rtlsdr_close()`] and panics on failure
+/// Calls [`rtlsdr_close()`] and panics on failure.
+///
+/// To close the device while handling a returned error gracefully, use [`ManuallyDrop`] and [`RtlSdrDevice::close()`].
+///
+/// Note: If someone else calls `rtlsdr_close()` on this device, this crashes as a use-after-free.
+/// `rtlsdr_close()` guards against NULL, but it cannot guard against dangling.
 impl Drop for RtlSdrDevice {
     fn drop(&mut self) {
         unsafe {
