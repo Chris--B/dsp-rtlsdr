@@ -272,7 +272,7 @@ impl RtlSdrDevice {
 /// To close the device while handling a returned error gracefully, use [`ManuallyDrop`] and [`RtlSdrDevice::close()`].
 ///
 /// Note: If someone else calls `rtlsdr_close()` on this device, this crashes as a use-after-free.
-/// `rtlsdr_close()` guards against NULL, but it cannot guard against dangling.
+/// `rtlsdr_close()` guards against `NULL`, but it cannot guard against dangling.
 impl Drop for RtlSdrDevice {
     fn drop(&mut self) {
         unsafe {
