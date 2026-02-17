@@ -1,19 +1,13 @@
 fn main() {
-    for maybe_path in [
-        "/usr/local/lib64", //
-        "/usr/local/lib",   //
-    ] {
-        if std::fs::exists(maybe_path).unwrap_or(false) {
-            println!("cargo::rustc-link-search={}", maybe_path);
-        }
-    }
-
     link_rtlsdr();
 }
 
 fn link_rtlsdr() {
     if try_find_link_paths("DSP_RTLSDR_LIB") {
-        println!("Found librtsdr libs with DSP_RTLSDR_LIB");
+        println!(
+            "Found librltsdr libs with DSP_RTLSDR_LIB: {:?}",
+            std::env::var("DSP_RTLSDR_LIB")
+        );
         return;
     }
 
@@ -23,18 +17,18 @@ fn link_rtlsdr() {
         .statik(true)
         .probe("librtlsdr")
     {
-        println!("Found librtsdr libs with pkg-config");
+        println!("Found librltsdr lib with pkg-config: {_pkg:#?}");
         return;
     }
 
     println!("cargo::rustc-link-lib=rtlsdr");
     println!(
-        "cargo::warning=Did NOT find librtsdr search path. You may need to set DSP_RTLSDR_LIB if linking fails."
+        "cargo::warning=Did NOT find librltsdr search path. You may need to set DSP_RTLSDR_LIB if linking fails."
     );
 }
 
 fn try_env_var(var: &str) -> Option<String> {
-    println!("cargo::rerun-if-env-changed={var}");
+    println!("cargo:rerun-if-env-changed={var}");
     std::env::var(var).ok()
 }
 
@@ -49,18 +43,28 @@ fn try_find_link_paths(lib_envvar: &str) -> bool {
             println!("cargo::warning=Unable to find lib from {lib_envvar}: {lib:?}");
         }
 
-        // Break off the dirs to add to search path
-        let dirname = lib.parent().unwrap();
-        println!("cargo::rustc-link-search={}", dirname.display());
-
         // Break off the filename to get the lib name
-        let mut lib = lib.file_stem().unwrap().to_string_lossy().to_string();
+        let mut lib_name = lib.file_stem().unwrap().to_string_lossy().to_string();
         // kill me
         let is_windows_target = std::env::var("CARGO_CFG_WINDOWS").is_ok();
-        if !is_windows_target && lib.starts_with("lib") {
-            lib = lib.strip_prefix("lib").unwrap().into();
+        if !is_windows_target && lib_name.starts_with("lib") {
+            lib_name = lib_name.strip_prefix("lib").unwrap().into();
         }
-        println!("cargo::rustc-link-lib={lib}");
+
+        let dirname = lib.parent().unwrap();
+        println!("cargo::rustc-link-search=native={}", dirname.display());
+
+        let kind = match lib
+            .extension()
+            .unwrap()
+            .to_string_lossy()
+            .to_lowercase()
+            .as_str()
+        {
+            "dll" | "so" | "dylib" => "dylib",
+            _ => "static",
+        };
+        println!("cargo::rustc-link-lib={kind}={lib_name}");
 
         true
     } else {
