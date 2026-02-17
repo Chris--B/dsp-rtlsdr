@@ -1,7 +1,7 @@
 
 This repo houses Rust bindings to `librtlsdr`. They aim to make using your RTL-SDR dongle a little bit easier to work with.
 
-For more infor on RTL-SDR hardware, see:
+For more info on RTL-SDR hardware, see:
 - https://www.rtl-sdr.com/about-rtl-sdr/
 - https://www.rtl-sdr.com/rtl-sdr-quick-start-guide/
 - https://osmocom.org/projects/rtl-sdr/wiki
@@ -15,7 +15,7 @@ cargo doc --open
 ```
 
 #### `dsp-rtlsdr-rs`
-This crate offers high level bindings built ontop of ``dsp-rtlsdr-sys`. They aim to make using this from Rust feel natural. Note that this crate is not feature-complete yet.
+This crate offers high level bindings built on top of ``dsp-rtlsdr-sys`. They aim to make using this from Rust feel natural. Note that this crate is not feature-complete yet.
 
 #### `dsp-rtlsdr-sys`
 This crate mirrors the `rtl-sdr.h` header as close as possible. It includes the comments from the header with light formatting tweaks to make reading `lib.rs` or the generated rustdoc pages easy. They can be used without or in junction with `dsp-rtlsdr-rs`.
@@ -51,7 +51,7 @@ pkg-config --libs librtlsdr
 ### Notes on linking
 `dsp-rtlsdr-sys` depends on [`libusb-sys`](https://crates.io/crates/libusb-sys) and both use [`pkg-config`](https://crates.io/crates/pkg-config) by default to locate the libraries to link against. Consult `libusb-sys`'s docs for options on controlling how it locates the library to link against. `dsp-rtlsdr-sys` follows the same conventions, since they're from `pkg-config`. By default, the `-sys` crate will attempt to static link `librtlsdr`.
 
-`dsp-rtlsdr-sys` also reads the `DSP_RTLSDR_LIB` environment variable to find a library to link against. This takes precendence over `pkg-config`. `DSP_RTLSDR_LIB` supports both static and dynamic libraries.
+`dsp-rtlsdr-sys` also reads the `DSP_RTLSDR_LIB` environment variable to find a library to link against. This takes precedence over `pkg-config`. `DSP_RTLSDR_LIB` supports both static and dynamic libraries.
 
 For example, if you have a local build you want to use:
 ```sh
