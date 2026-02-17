@@ -62,6 +62,9 @@ fn main() {
             return;
         }
 
+        err = rtlsdr_set_testmode(dev, 1);
+        log_rtlsdr_err!(err, "rtlsdr_set_testmode");
+
         err = rtlsdr_reset_buffer(dev);
         log_rtlsdr_err!(err, "rtlsdr_reset_buffer");
 
@@ -89,7 +92,7 @@ fn main() {
         for i in 0..32 {
             print!("    ");
             for j in 0..32 {
-                print!("0x{:.02x} ", buf[32 * i + j]);
+                print!("0x{:02x} ", buf[32 * i + j]);
             }
             println!();
         }
