@@ -58,3 +58,26 @@ For example, if you have a local build you want to use:
 $ DSP_RTLSDR_LIB=$PWD/_build/librtlsdr.a cargo build
 ```
 You can set this in your shells, or with with `[env]` in your [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html).
+
+## Samples
+Once everything builds, checkout the example code in `dsp-rtlsdr-sys/examples/`
+- `hello-rtlsdr-sys `demonstrates basic does-this-even-work usage of the `-sys` crate that can be used to make sure your device is functioning properly. They use the test mode of the dongle to output incrementing bytes.
+```sh
+cargo run --example hello-rtlsdr-sys
+```
+
+Note that only one application can hold the device at a time, so if it fails with device access errors check that something else isn't using it:
+```
+Found 1 device(s)
+  + "Generic RTL2832U OEM"
+  + Manufact: "RTLSDRBlog"
+  + Product: "Blog V4"
+  + Serial: "00000001"
+
+Kernel driver is active, or device is claimed by second instance of librtlsdr.
+In the first case, please either detach or blacklist the kernel module
+(dvb_usb_rtl28xxu), or enable automatic detaching at compile time.
+
+usb_claim_interface error -3
+rtlsdr_open: "Access denied (insufficient permissions)" (-3)
+```
