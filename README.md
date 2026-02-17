@@ -1,0 +1,60 @@
+
+This repo houses Rust bindings to `librtlsdr`. They aim to make using your RTL-SDR dongle a little bit easier to work with.
+
+For more infor on RTL-SDR hardware, see:
+- https://www.rtl-sdr.com/about-rtl-sdr/
+- https://www.rtl-sdr.com/rtl-sdr-quick-start-guide/
+- https://osmocom.org/projects/rtl-sdr/wiki
+
+## What's Included?
+
+#### Documentation
+For comprehensive documentation on each crate, it's recommended to clone the repo and generate the Rust docs directly:
+```sh
+cargo doc --open
+```
+
+#### `dsp-rtlsdr-rs`
+This crate offers high level bindings built ontop of ``dsp-rtlsdr-sys`. They aim to make using this from Rust feel natural. Note that this crate is not feature-complete yet.
+
+#### `dsp-rtlsdr-sys`
+This crate mirrors the `rtl-sdr.h` header as close as possible. It includes the comments from the header with light formatting tweaks to make reading `lib.rs` or the generated rustdoc pages easy. They can be used without or in junction with `dsp-rtlsdr-rs`.
+
+## Building
+All of the crates here build with standard `cargo` usage and can be included in a project directly from GitHub.
+```sh
+$ cargo add --git https://github.com/Chris--B/dsp-rtlsdr.git dsp-rtlsdr-rs
+```
+Because the repo has multiple crates, you'll need to specifiy which crate(s) you want to use. Note that the `-rs` crate re-exports the `-sys` crate.
+
+### Installing `librtlsdr` and `libusb-1.0`
+The `-sys` crate depends on both a locally installed `librtlsdr` and `libusb-1.0`. The most reliable way to use these is to install them with your local package manager.
+
+```sh
+# macOS
+$ brew install librtlsdr libusb
+
+# Fedora
+$ dnf install rtl-sdr-devel libusb1-devel
+
+# Ubuntu
+$ apt install librtlsdr-dev libusb-1.0-0
+
+# Windows is untested. Consult the next section for details on how to control how libs for `librtlsdr` and `libusb-1.0` are found.
+```
+
+Verify that `pkg-config` can find your installed library with:
+```sh
+pkg-config --libs librtlsdr
+```
+
+### Notes on linking
+`dsp-rtlsdr-sys` depends on [`libusb-sys`](https://crates.io/crates/libusb-sys) and both use [`pkg-config`](https://crates.io/crates/pkg-config) by default to locate the libraries to link against. Consult `libusb-sys`'s docs for options on controlling how it locates the library to link against. `dsp-rtlsdr-sys` follows the same conventions, since they're from `pkg-config`. By default, the `-sys` crate will attempt to static link `librtlsdr`.
+
+`dsp-rtlsdr-sys` also reads the `DSP_RTLSDR_LIB` environment variable to find a library to link against. This takes precendence over `pkg-config`. `DSP_RTLSDR_LIB` supports both static and dynamic libraries.
+
+For example, if you have a local build you want to use:
+```sh
+$ DSP_RTLSDR_LIB=$PWD/_build/librtlsdr.a cargo build
+```
+You can set this in your shells, or with with `[env]` in your [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html).
