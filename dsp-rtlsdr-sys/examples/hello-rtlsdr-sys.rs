@@ -17,8 +17,9 @@ macro_rules! log_rtlsdr_err {
 fn main() {
     unsafe {
         let num_devices = rtlsdr_get_device_count();
-        println!("Found {num_devices} device(s), is your device connected?");
+        println!("Found {num_devices} device(s)");
         if num_devices == 0 {
+            println!("Is your device connected?");
             return;
         }
 
