@@ -35,7 +35,7 @@ impl RtlSdrError {
     }
 }
 
-/// An error that can be raised from librtlsdr functions
+/// An error that can be raised from `librtlsdr` functions
 ///
 /// Note: Because `librtlsdr` uses `libusb-1.0`'s error codes exactly, these all match directly to `libusb-1.0`'s error codes.
 ///
