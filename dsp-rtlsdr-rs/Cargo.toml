@@ -4,5 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-dsp-rtlsdr-sys = { git = "https://github.com/Chris--B/dsp-rtlsdr" }
-# dsp-rtlsdr-sys = { path = "../dsp-rtlsdr-sys" }
+dsp-rtlsdr-sys = { path = "../dsp-rtlsdr-sys" }

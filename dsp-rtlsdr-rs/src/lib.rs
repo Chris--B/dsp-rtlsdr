@@ -175,8 +175,12 @@ impl RtlSdrDevice {
             let mut dev = rtlsdr_dev_t::null();
             make_result("rtlsdr_open", rtlsdr_open(&mut dev, index))?;
             debug_assert!(!dev.raw().is_null());
+            let mut device = Self { dev, index };
 
-            Ok(Self { dev, index })
+            // Seemingly need to do this unconditionally?
+            device.reset_buffer()?;
+
+            Ok(device)
         }
     }
 
@@ -190,6 +194,19 @@ impl RtlSdrDevice {
 
             Ok(())
         }
+    }
+
+    /// [`rtlsdr_reset_buffer()`]
+    pub fn reset_buffer(&mut self) -> Result<()> {
+        unsafe {
+            make_result("rtlsdr_reset_buffer", rtlsdr_reset_buffer(self.dev))?;
+
+            Ok(())
+        }
+    }
+
+    pub fn raw(&mut self) -> rtlsdr_dev_t {
+        self.dev
     }
 }
 
@@ -263,6 +280,58 @@ impl RtlSdrDevice {
             Ok(CStr::from_ptr(&buf as *const c_char)
                 .to_string_lossy()
                 .to_string())
+        }
+    }
+
+    /// [`rtlsdr_set_sample_rate`]
+    pub fn set_sample_rate(&mut self, sample_rate: u32) -> Result<()> {
+        unsafe {
+            make_result(
+                "rtlsdr_set_sample_rate",
+                rtlsdr_set_sample_rate(self.dev, sample_rate),
+            )?;
+
+            Ok(())
+        }
+    }
+
+    /// [`rtlsdr_set_center_freq`]`
+    pub fn set_center_freq(&mut self, center_freq: u32) -> Result<()> {
+        unsafe {
+            make_result(
+                "rtlsdr_set_center_freq",
+                rtlsdr_set_center_freq(self.dev, center_freq),
+            )?;
+
+            Ok(())
+        }
+    }
+
+    /// [`rtlsdr_set_testmode`]
+    pub fn set_testmode_enabled(&mut self, enabled: bool) -> Result<()> {
+        unsafe {
+            make_result(
+                "rtlsdr_set_testmode",
+                rtlsdr_set_testmode(self.dev, enabled as i32),
+            )?;
+
+            // Seemingly need to do this for testmode to take effect?
+            self.reset_buffer()?;
+
+            Ok(())
+        }
+    }
+
+    /// [`rtlsdr_read_sync`]
+    pub fn read_samples(&mut self, buf: &mut [u8]) -> Result<i32> {
+        unsafe {
+            let mut n_read = 0;
+            make_result(
+                "rtlsdr_read_sync",
+                rtlsdr_read_sync(self.dev, buf.as_mut_ptr(), buf.len() as i32, &mut n_read),
+            )?;
+
+            Ok(n_read)
         }
     }
 }

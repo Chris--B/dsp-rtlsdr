@@ -3,4 +3,5 @@ resolver = "3"
 members = [
     "dsp-rtlsdr-rs",
     "dsp-rtlsdr-sys",
+    "wavy-mcgee",
 ]

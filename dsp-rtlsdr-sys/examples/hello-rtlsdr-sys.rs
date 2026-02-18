@@ -69,7 +69,7 @@ fn main() {
         err = rtlsdr_reset_buffer(dev);
         log_rtlsdr_err!(err, "rtlsdr_reset_buffer");
 
-        err = rtlsdr_set_sample_rate(dev, 2.048e6 /*Hz*/ as u32);
+        err = rtlsdr_set_sample_rate(dev, 900_001 /*Hz*/);
         log_rtlsdr_err!(err, "rtlsdr_set_sample_rate");
 
         err = rtlsdr_set_center_freq(dev, 99_500_000 /*Hz*/);
@@ -90,7 +90,7 @@ fn main() {
             return;
         }
 
-        for i in 0..32 {
+        for i in 0..8 {
             print!("    ");
             for j in 0..32 {
                 print!("0x{:02x} ", buf[32 * i + j]);
