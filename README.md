@@ -15,10 +15,10 @@ cargo doc --open
 ```
 
 #### `dsp-rtlsdr-rs`
-This crate offers high level bindings built on top of ``dsp-rtlsdr-sys`. They aim to make using this from Rust feel natural. Note that this crate is not feature-complete yet.
+This crate offers high level bindings built on top of `dsp-rtlsdr-sys`. It aims to make using this from Rust feel natural. Note that this crate is not feature-complete yet.
 
 #### `dsp-rtlsdr-sys`
-This crate mirrors the `rtl-sdr.h` header as close as possible. It includes the comments from the header with light formatting tweaks to make reading `lib.rs` or the generated rustdoc pages easy. They can be used without or in junction with `dsp-rtlsdr-rs`.
+This crate mirrors the `rtl-sdr.h` header as closely as possible. It includes the comments from the header with light formatting tweaks to make reading `lib.rs` or the generated rustdoc pages easy. It can be used without, or in-junction with `dsp-rtlsdr-rs`.
 
 ## Building
 All of the crates here build with standard `cargo` usage and can be included in a project directly from GitHub.
