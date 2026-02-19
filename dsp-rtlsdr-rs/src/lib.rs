@@ -150,6 +150,13 @@ impl ErrorCode {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(i32)]
+pub enum GainMode {
+    Auto = 0,
+    Manual = 1,
+}
+
 /// Shorthand to quickly build a Result from an rtlsdr error return code
 #[track_caller]
 fn make_result(what: &'static str, raw: c_int) -> Result<()> {
@@ -210,6 +217,7 @@ impl RtlSdrDevice {
     }
 }
 
+/// Info
 impl RtlSdrDevice {
     /// [`rtlsdr_get_device_name()`]
     pub fn name(&self) -> String {
@@ -282,7 +290,10 @@ impl RtlSdrDevice {
                 .to_string())
         }
     }
+}
 
+/// Setters
+impl RtlSdrDevice {
     /// [`rtlsdr_set_sample_rate`]
     pub fn set_sample_rate(&mut self, sample_rate: u32) -> Result<()> {
         unsafe {
@@ -322,6 +333,73 @@ impl RtlSdrDevice {
         }
     }
 
+    /// [`rtlsdr_set_freq_correction`]
+    pub fn set_freq_correction(&mut self, ppm: i32) -> Result<()> {
+        unsafe {
+            make_result(
+                "rtlsdr_set_freq_correction",
+                rtlsdr_set_freq_correction(self.dev, ppm),
+            )?;
+
+            Ok(())
+        }
+    }
+
+    /// [`rtlsdr_set_tuner_gain_mode`]
+    pub fn set_tuner_gain_mode(&mut self, mode: GainMode) -> Result<()> {
+        unsafe {
+            make_result(
+                "rtlsdr_set_tuner_gain_mode",
+                rtlsdr_set_tuner_gain_mode(self.dev, mode as i32),
+            )?;
+
+            Ok(())
+        }
+    }
+}
+
+/// Getters
+impl RtlSdrDevice {
+    /// [`rtlsdr_get_sample_rate`]
+    pub fn get_sample_rate(&mut self) -> Result<u32> {
+        unsafe {
+            let res = rtlsdr_get_sample_rate(self.dev);
+
+            if res != 0 {
+                Ok(res)
+            } else {
+                Err(RtlSdrError {
+                    what: "rtlsdr_get_sample_rate",
+                    code: ErrorCode::Other,
+                })
+            }
+        }
+    }
+
+    /// [`rtlsdr_get_center_freq`]`
+    pub fn get_center_freq(&mut self) -> Result<u32> {
+        unsafe {
+            let res = rtlsdr_get_center_freq(self.dev);
+
+            if res != 0 {
+                Ok(res)
+            } else {
+                Err(RtlSdrError {
+                    what: "rtlsdr_get_center_freq",
+                    code: ErrorCode::Other,
+                })
+            }
+        }
+    }
+
+    /// [`rtlsdr_get_freq_correction`]
+    pub fn get_freq_correction(&mut self) -> i32 {
+        unsafe { rtlsdr_get_freq_correction(self.dev) }
+    }
+}
+
+/// Reading Samples
+impl RtlSdrDevice {
     /// [`rtlsdr_read_sync`]
     pub fn read_samples(&mut self, buf: &mut [u8]) -> Result<i32> {
         unsafe {

@@ -90,13 +90,13 @@ fn main() {
             return;
         }
 
-        for i in 0..8 {
-            print!("    ");
-            for j in 0..32 {
-                print!("0x{:02x} ", buf[32 * i + j]);
+        for (i, sample) in buf.iter().enumerate().take(304) {
+            if i > 0 && i % 16 == 0 {
+                println!();
             }
-            println!();
+            print!("{sample:>3} ");
         }
+        println!();
 
         rtlsdr_close(dev);
     }

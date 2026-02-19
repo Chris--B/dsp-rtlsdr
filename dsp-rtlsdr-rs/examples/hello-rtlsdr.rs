@@ -2,7 +2,7 @@
 #![forbid(unsafe_code)]
 #![allow(unused)]
 
-use dsp_rtlsdr_rs::{RtlSdrDevice, all_rtlsdr_devices};
+use dsp_rtlsdr_rs::*;
 
 fn main() -> dsp_rtlsdr_rs::Result<()> {
     {
@@ -26,21 +26,21 @@ fn main() -> dsp_rtlsdr_rs::Result<()> {
         dev.set_testmode_enabled(true)?;
 
         dev.set_sample_rate(900_001 /*Hz*/)?;
-        dev.set_center_freq(99_500_000 /*Hz*/);
-        // err = rtlsdr_set_freq_correction(dev, 60 /*PPM*/);
-        // err = rtlsdr_set_tuner_gain_mode(dev, 0 /*auto*/);
+        dev.set_center_freq(99_500_000 /*Hz*/)?;
+        dev.set_freq_correction(60 /*PPM*/)?;
+        dev.set_tuner_gain_mode(GainMode::Auto)?;
 
         let mut buf = [0_u8; 1024];
         let num_samples = dev.read_samples(&mut buf)?;
         println!("Sync: Read {num_samples} samples",);
 
-        for i in 0..8 {
-            print!("    ");
-            for j in 0..32 {
-                print!("0x{:.02x} ", buf[32 * i + j]);
+        for (i, sample) in buf.iter().enumerate().take(304) {
+            if i > 0 && i % 16 == 0 {
+                println!();
             }
-            println!();
+            print!("{sample:>3} ");
         }
+        println!();
 
         dev.close();
     }
