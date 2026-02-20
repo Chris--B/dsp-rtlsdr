@@ -60,7 +60,6 @@ fn init_state(args: Args) -> Result<State, RtlSdrError> {
     Ok(State {
         dev,
         samplerate: samplerate as f64,
-        // bandwidth:bandwidth as f64,
         frequency: frequency as f64,
         buf,
     })
