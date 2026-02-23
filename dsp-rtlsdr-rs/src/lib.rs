@@ -92,6 +92,9 @@ pub enum ErrorCode {
     /// See: [`LIBUSB_ERROR_NOT_SUPPORTED`]
     NotSupported = LIBUSB_ERROR_NOT_SUPPORTED,
 
+    /// See: [`RTLSDR_EINVAL`]
+    InvalidValue = RTLSDR_EINVAL,
+
     /// See: [`LIBUSB_ERROR_OTHER`]
     Other = LIBUSB_ERROR_OTHER,
 }
@@ -132,6 +135,7 @@ impl ErrorCode {
             Self::Interrupted => LIBUSB_ERROR_INTERRUPTED,
             Self::NoMem => LIBUSB_ERROR_NO_MEM,
             Self::NotSupported => LIBUSB_ERROR_NOT_SUPPORTED,
+            Self::InvalidValue => RTLSDR_EINVAL,
             Self::Other => LIBUSB_ERROR_OTHER,
         }
     }
@@ -151,6 +155,7 @@ impl ErrorCode {
             LIBUSB_ERROR_INTERRUPTED => Self::Interrupted,
             LIBUSB_ERROR_NO_MEM => Self::NoMem,
             LIBUSB_ERROR_NOT_SUPPORTED => Self::NotSupported,
+            RTLSDR_EINVAL => Self::InvalidValue,
             LIBUSB_ERROR_OTHER => Self::Other,
             other => {
                 eprintln!(

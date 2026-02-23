@@ -18,7 +18,7 @@ pub const RTLSDR_TUNER_FC2580: rtlsdr_tuner = 4;
 pub const RTLSDR_TUNER_R820T: rtlsdr_tuner = 5;
 pub const RTLSDR_TUNER_R828D: rtlsdr_tuner = 6;
 
-pub const EINVAL: c_int = 22;
+pub const RTLSDR_EINVAL: c_int = -22;
 
 #[rustfmt::skip]
 pub type rtlsdr_read_async_cb_t = Option<
