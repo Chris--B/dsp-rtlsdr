@@ -3,9 +3,9 @@ pub use dsp_rtlsdr_sys as sys;
 use sys::libusb_sys::*;
 use sys::*;
 
-use std::ffi::CStr;
-use std::ffi::{c_char, c_int};
-use std::mem::ManuallyDrop;
+use core::ffi::CStr;
+use core::ffi::{c_char, c_int};
+use core::mem::ManuallyDrop;
 
 pub type Result<T, E = crate::RtlSdrError> = std::result::Result<T, E>;
 
@@ -34,6 +34,18 @@ impl RtlSdrError {
         format!("{}: {}", self.what, self.code.desc())
     }
 }
+
+impl core::fmt::Display for RtlSdrError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let what = self.what;
+        let desc = self.desc();
+        let code = self.code;
+        write!(f, "{what}: {desc} ({code:?})")?;
+        Ok(())
+    }
+}
+
+impl core::error::Error for RtlSdrError {}
 
 /// An error that can be raised from `librtlsdr` functions
 ///
