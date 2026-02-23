@@ -68,12 +68,6 @@ fn init_state(args: Args) -> Result<State, RtlSdrError> {
 fn allocate_func() -> State {
     let args = Args::parse();
 
-    if !((225_001..=300_000).contains(&args.samplerate)
-        || (900_001..=3_200_000).contains(&args.samplerate))
-    {
-        panic!("`frequency` must be in [225_001, 300_000] Hz or [900_001, 3_200_000] Hz");
-    }
-
     // TODO: Any center_frequency OK...?
 
     init_state(args).expect("Failed to allocate device")

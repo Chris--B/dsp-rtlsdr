@@ -308,6 +308,14 @@ impl RtlSdrDevice {
 impl RtlSdrDevice {
     /// [`rtlsdr_set_sample_rate`]
     pub fn set_sample_rate(&mut self, sample_rate: u32) -> Result<()> {
+        if !((225_001..=300_000).contains(&sample_rate)
+            || (900_001..=3_200_000).contains(&sample_rate))
+        {
+            eprintln!(
+                "RtlDevice::set_sample_rate(): Valid sample rates are [225_001, 300_000] Hz or [900_001, 3_200_000] Hz"
+            );
+        }
+
         unsafe {
             make_result(
                 "rtlsdr_set_sample_rate",
