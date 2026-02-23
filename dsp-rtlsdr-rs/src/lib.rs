@@ -376,6 +376,18 @@ impl RtlSdrDevice {
             Ok(())
         }
     }
+
+    /// [`rtlsdr_set_tuner_gain`]
+    pub fn set_tuner_gain(&mut self, gain: i32) -> Result<()> {
+        unsafe {
+            make_result(
+                "rtlsdr_set_tuner_gain",
+                rtlsdr_set_tuner_gain(self.dev, gain),
+            )?;
+
+            Ok(())
+        }
+    }
 }
 
 /// Getters
