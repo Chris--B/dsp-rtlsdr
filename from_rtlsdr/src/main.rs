@@ -28,7 +28,7 @@ struct Args {
 
     /// Intermediate buffer size in KiBs
     #[arg(long, default_value_t = 16)]
-    buf_size: usize,
+    buf_size_kib: usize,
 }
 
 #[allow(unused)]
@@ -55,7 +55,7 @@ fn init_state(args: Args) -> Result<State, RtlSdrError> {
         sys::rtlsdr_set_bias_tee(dev.raw(), args.bias_tee_enable as _);
     }
 
-    let buf = vec![ci8::new(0, 0); args.buf_size * 1024 / 2];
+    let buf = vec![ci8::new(0, 0); args.buf_size_kib * 1024 / 2];
 
     Ok(State {
         dev,
