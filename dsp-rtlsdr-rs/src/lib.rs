@@ -229,6 +229,7 @@ impl RtlSdrDevice {
         }
     }
 
+    /// Access underlying [`rtlsdr_dev_t`]
     pub fn raw(&mut self) -> rtlsdr_dev_t {
         self.dev
     }
@@ -248,14 +249,14 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_get_device_usb_strings()`]
+    /// [`rtlsdr_get_usb_strings()`]
     pub fn maufacture(&self) -> Result<String> {
         let mut buf = [0 as c_char; 256];
         unsafe {
             make_result(
-                "rtlsdr_get_device_usb_strings",
-                rtlsdr_get_device_usb_strings(
-                    self.index,
+                "rtlsdr_get_usb_strings",
+                rtlsdr_get_usb_strings(
+                    self.dev,
                     buf.as_mut_ptr(),
                     core::ptr::null_mut(),
                     core::ptr::null_mut(),
@@ -268,14 +269,14 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_get_device_usb_strings()`]
+    /// [`rtlsdr_get_usb_strings()`]
     pub fn product(&self) -> Result<String> {
         let mut buf = [0 as c_char; 256];
         unsafe {
             make_result(
-                "rtlsdr_get_device_usb_strings",
-                rtlsdr_get_device_usb_strings(
-                    self.index,
+                "rtlsdr_get_usb_strings",
+                rtlsdr_get_usb_strings(
+                    self.dev,
                     core::ptr::null_mut(),
                     buf.as_mut_ptr(),
                     core::ptr::null_mut(),
@@ -288,14 +289,14 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_get_device_usb_strings()`]
+    /// [`rtlsdr_get_usb_strings()`]
     pub fn serial(&self) -> Result<String> {
         let mut buf = [0 as c_char; 256];
         unsafe {
             make_result(
-                "rtlsdr_get_device_usb_strings",
-                rtlsdr_get_device_usb_strings(
-                    self.index,
+                "rtlsdr_get_usb_strings",
+                rtlsdr_get_usb_strings(
+                    self.dev,
                     core::ptr::null_mut(),
                     core::ptr::null_mut(),
                     buf.as_mut_ptr(),

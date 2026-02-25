@@ -40,18 +40,20 @@ fn main() {
 
             let manufact = CStr::from_ptr(manufact.as_ptr());
             if !manufact.is_empty() {
-                println!("  + Manufact: {:?}", manufact);
+                println!("    + Manufact: {:?}", manufact);
             }
 
             let product = CStr::from_ptr(product.as_ptr());
             if !product.is_empty() {
-                println!("  + Product: {:?}", product);
+                println!("    + Product: {:?}", product);
             }
 
             let serial = CStr::from_ptr(serial.as_ptr());
             if !serial.is_empty() {
-                println!("  + Serial: {:?}", serial);
+                println!("    + Serial: {:?}", serial);
             }
+
+            println!();
         }
 
         let mut err;
