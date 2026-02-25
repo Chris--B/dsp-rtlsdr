@@ -61,7 +61,7 @@ unsafe extern "C" {
     ///
     /// ## Return Value
     /// - device index of first device where the name matched
-    /// - `-1` if name is `NULL`
+    /// - `-1` if serial is `NULL`
     /// - `-2` if no devices were found at all
     /// - `-3` if devices were found, but none with matching name
     pub fn rtlsdr_get_index_by_serial(serial: *const c_char) -> c_int;

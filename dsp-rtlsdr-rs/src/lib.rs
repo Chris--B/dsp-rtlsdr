@@ -3,9 +3,11 @@ pub use dsp_rtlsdr_sys as sys;
 use sys::libusb_sys::*;
 use sys::*;
 
-use core::ffi::CStr;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
+use core::str::FromStr;
+
+use std::ffi::{CStr, CString};
 
 pub type Result<T, E = crate::RtlSdrError> = std::result::Result<T, E>;
 
@@ -192,7 +194,13 @@ pub struct RtlSdrDevice {
     index: u32,
 }
 
+/// Basic Device managment
 impl RtlSdrDevice {
+    /// [`rtlsdr_get_device_count()`]
+    pub fn get_device_count() -> u32 {
+        rtlsdr_get_device_count()
+    }
+
     /// [`rtlsdr_open()`]
     pub fn open(index: u32) -> Result<Self> {
         unsafe {
@@ -233,9 +241,41 @@ impl RtlSdrDevice {
     pub fn raw(&mut self) -> rtlsdr_dev_t {
         self.dev
     }
+
+    /// Get device index by USB serial string descriptor.
+    pub fn get_index_by_serial(serial: impl AsRef<str>) -> Result<u32> {
+        let serial: &str = serial.as_ref();
+        let serial = serial.trim_end_matches('\0');
+        let serial = serial.to_string();
+        let c_serial = CString::from_str(&serial).expect("serial must not have embedded NULs");
+
+        unsafe {
+            let res = rtlsdr_get_index_by_serial(c_serial.as_ptr());
+
+            if res < 0 {
+                // Note: Possible failure reasons here:
+                //     - `-1` if serial is `NULL`
+                //     - `-2` if no devices were found at all
+                //     - `-3` if devices were found, but none with matching name
+                //
+                // All of them really mean "we didn't find your device"
+
+                eprintln!(
+                    "Couldn't find serial {serial:?} out of {} device(s): ({res})",
+                    rtlsdr_get_device_count()
+                );
+                Err(RtlSdrError {
+                    what: "rtlsdr_get_index_by_serial",
+                    code: ErrorCode::NotFound,
+                })
+            } else {
+                Ok(res as u32)
+            }
+        }
+    }
 }
 
-/// Info
+/// Info (on Device)
 impl RtlSdrDevice {
     /// [`rtlsdr_get_device_name()`]
     pub fn name(&self) -> String {
@@ -250,7 +290,7 @@ impl RtlSdrDevice {
     }
 
     /// [`rtlsdr_get_usb_strings()`]
-    pub fn maufacture(&self) -> Result<String> {
+    pub fn maufacturer(&self) -> Result<String> {
         let mut buf = [0 as c_char; 256];
         unsafe {
             make_result(
@@ -310,9 +350,84 @@ impl RtlSdrDevice {
     }
 }
 
+/// Info (static)
+impl RtlSdrDevice {
+    /// [`rtlsdr_get_device_name()`]
+    pub fn name_of(index: u32) -> String {
+        unsafe {
+            let p_str = rtlsdr_get_device_name(index);
+            if !p_str.is_null() {
+                CStr::from_ptr(p_str).to_string_lossy().to_string()
+            } else {
+                "".to_string()
+            }
+        }
+    }
+
+    /// [`rtlsdr_get_device_usb_strings()`]
+    pub fn maufacturer_of(index: u32) -> Result<String> {
+        let mut buf = [0 as c_char; 256];
+        unsafe {
+            make_result(
+                "rtlsdr_get_device_usb_strings",
+                rtlsdr_get_device_usb_strings(
+                    index,
+                    buf.as_mut_ptr(),
+                    core::ptr::null_mut(),
+                    core::ptr::null_mut(),
+                ),
+            )?;
+
+            Ok(CStr::from_ptr(&buf as *const c_char)
+                .to_string_lossy()
+                .to_string())
+        }
+    }
+
+    /// [`rtlsdr_get_device_usb_strings()`]
+    pub fn product_of(index: u32) -> Result<String> {
+        let mut buf = [0 as c_char; 256];
+        unsafe {
+            make_result(
+                "rtlsdr_get_device_usb_strings",
+                rtlsdr_get_device_usb_strings(
+                    index,
+                    core::ptr::null_mut(),
+                    buf.as_mut_ptr(),
+                    core::ptr::null_mut(),
+                ),
+            )?;
+
+            Ok(CStr::from_ptr(&buf as *const c_char)
+                .to_string_lossy()
+                .to_string())
+        }
+    }
+
+    /// [`rtlsdr_get_device_usb_strings()`]
+    pub fn serial_of(index: u32) -> Result<String> {
+        let mut buf = [0 as c_char; 256];
+        unsafe {
+            make_result(
+                "rtlsdr_get_device_usb_strings",
+                rtlsdr_get_device_usb_strings(
+                    index,
+                    core::ptr::null_mut(),
+                    core::ptr::null_mut(),
+                    buf.as_mut_ptr(),
+                ),
+            )?;
+
+            Ok(CStr::from_ptr(&buf as *const c_char)
+                .to_string_lossy()
+                .to_string())
+        }
+    }
+}
+
 /// Setters
 impl RtlSdrDevice {
-    /// [`rtlsdr_set_sample_rate`]
+    /// [`rtlsdr_set_sample_rate()`]
     pub fn set_sample_rate(&mut self, sample_rate: u32) -> Result<()> {
         if !((225_001..=300_000).contains(&sample_rate)
             || (900_001..=3_200_000).contains(&sample_rate))
@@ -344,7 +459,7 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_set_testmode`]
+    /// [`rtlsdr_set_testmode()`]
     pub fn set_testmode_enabled(&mut self, enabled: bool) -> Result<()> {
         unsafe {
             make_result(
@@ -359,7 +474,7 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_set_freq_correction`]
+    /// [`rtlsdr_set_freq_correction()`]
     pub fn set_freq_correction(&mut self, ppm: i32) -> Result<()> {
         unsafe {
             make_result(
@@ -371,7 +486,7 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_set_tuner_gain_mode`]
+    /// [`rtlsdr_set_tuner_gain_mode()`]
     pub fn set_tuner_gain_mode(&mut self, mode: GainMode) -> Result<()> {
         unsafe {
             make_result(
@@ -383,7 +498,7 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_set_tuner_gain`]
+    /// [`rtlsdr_set_tuner_gain()`]
     pub fn set_tuner_gain(&mut self, gain: i32) -> Result<()> {
         unsafe {
             make_result(
@@ -396,9 +511,84 @@ impl RtlSdrDevice {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct XtalFrequencies {
+    /// The frequency value used to clock the RTL2832 in Hz
+    pub rtl: u32,
+
+    /// The frequency value used to clock the tuner IC in Hz
+    pub tuner: u32,
+}
+
 /// Getters
 impl RtlSdrDevice {
-    /// [`rtlsdr_get_sample_rate`]
+    /// [`rtlsdr_get_xtal_freq()`]
+    pub fn get_xtal_freq(&mut self) -> Result<XtalFrequencies> {
+        unsafe {
+            let mut xtal = XtalFrequencies { rtl: 0, tuner: 0 };
+            make_result(
+                "rtlsdr_get_xtal_freq",
+                rtlsdr_get_xtal_freq(self.dev, &mut xtal.rtl, &mut xtal.tuner),
+            )?;
+
+            Ok(xtal)
+        }
+    }
+
+    /// Size of the EEPROM on an RTLSDR device, if any is present
+    pub const EEPROM_SIZE: usize = 256;
+
+    /// Read the device EEPROM.
+    ///
+    /// Reads data into `data` starting at offset `offset` in the device EEPROM.
+    ///
+    /// # Return Value
+    /// - If `data` is too large, returns `ErrorCode::NotSupported`
+    /// - If there is no EEPROM on this device, returns `ErrorCode::NotFound`
+    ///
+    /// [`rtlsdr_read_eeprom()`]
+    pub fn read_eeprom(&mut self, data: &mut [u8], offset: u8) -> Result<()> {
+        unsafe {
+            let len = data.len();
+            let p_data = data.as_mut_ptr();
+            match rtlsdr_read_eeprom(self.dev, p_data, offset, len as u16) {
+                // - `0` on success
+                0 => Ok(()),
+
+                // - TODO: Investigate what positive values mean.
+                //   They seem to be success and related to transfers?
+                1.. => Ok(()),
+
+                // - `-1` if device handle is invalid
+                -1 => unreachable!("Device was invalid"),
+
+                // - `-2` if EEPROM size is exceeded
+                -2 => Err(RtlSdrError {
+                    what: "rtlsdr_read_eeprom",
+                    code: ErrorCode::NotSupported,
+                }),
+
+                // - `-3` if no EEPROM was found
+                -3 => Err(RtlSdrError {
+                    what: "rtlsdr_read_eeprom",
+                    code: ErrorCode::NotFound,
+                }),
+
+                // Unrecognized error
+                err => {
+                    eprintln!(
+                        "rtlsdr_read_eeprom({{dev}}, {{data}}, {offset}, {len}) failed with: {err}"
+                    );
+                    Err(RtlSdrError {
+                        what: "rtlsdr_read_eeprom",
+                        code: ErrorCode::Other,
+                    })
+                }
+            }
+        }
+    }
+
+    /// [`rtlsdr_get_sample_rate()`]
     pub fn get_sample_rate(&mut self) -> Result<u32> {
         unsafe {
             let res = rtlsdr_get_sample_rate(self.dev);
@@ -430,7 +620,7 @@ impl RtlSdrDevice {
         }
     }
 
-    /// [`rtlsdr_get_freq_correction`]
+    /// [`rtlsdr_get_freq_correction()`]
     pub fn get_freq_correction(&mut self) -> i32 {
         unsafe { rtlsdr_get_freq_correction(self.dev) }
     }
@@ -438,7 +628,7 @@ impl RtlSdrDevice {
 
 /// Reading Samples
 impl RtlSdrDevice {
-    /// [`rtlsdr_read_sync`]
+    /// [`rtlsdr_read_sync()`]
     pub fn read_samples(&mut self, buf: &mut [u8]) -> Result<i32> {
         unsafe {
             let mut n_read = 0;
