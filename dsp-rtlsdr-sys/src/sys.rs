@@ -231,7 +231,7 @@ unsafe extern "C" {
     ///
     /// Manual gain mode must be enabled for this to work.
     ///
-    /// Valid gain values (in tenths of a dB) for the E4000 tuner:
+    /// Valid gain values (in tenths of a dB) for the `E4000` tuner:
     /// - -10, 15, 40, 65, 90, 115, 140, 165, 190,
     /// - 215, 240, 290, 340, 420, 430, 450, 470, 490
     ///

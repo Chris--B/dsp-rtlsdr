@@ -576,6 +576,16 @@ pub struct XtalFrequencies {
     pub tuner: u32,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(i32)]
+pub enum Tuner {
+    E4000 = 1,
+    FC0012 = 2,
+    FC0013 = 3,
+    FC2580 = 4,
+    R820T = 5,
+    R828D = 6,
+}
 
 /// Getters
 impl RtlSdrDevice {
@@ -627,6 +637,85 @@ impl RtlSdrDevice {
     /// [`rtlsdr_get_freq_correction()`]
     pub fn get_freq_correction(&mut self) -> i32 {
         unsafe { rtlsdr_get_freq_correction(self.dev) }
+    }
+
+    /// [`rtlsdr_get_tuner_type()`]
+    pub fn get_tuner_type(&mut self) -> Result<Tuner> {
+        unsafe {
+            let what = "rtlsdr_get_tuner_type";
+            match rtlsdr_get_tuner_type(self.dev) {
+                RTLSDR_TUNER_UNKNOWN => Err(RtlSdrError {
+                    what,
+                    code: ErrorCode::Other,
+                }),
+                RTLSDR_TUNER_E4000 => Ok(Tuner::E4000),
+                RTLSDR_TUNER_FC0012 => Ok(Tuner::FC0012),
+                RTLSDR_TUNER_FC0013 => Ok(Tuner::FC0013),
+                RTLSDR_TUNER_FC2580 => Ok(Tuner::FC2580),
+                RTLSDR_TUNER_R820T => Ok(Tuner::R820T),
+                RTLSDR_TUNER_R828D => Ok(Tuner::R828D),
+                other_tuner => {
+                    eprintln!("Found unknown tuner type: {other_tuner}");
+                    Err(RtlSdrError {
+                        what,
+                        code: ErrorCode::Other,
+                    })
+                }
+            }
+        }
+    }
+
+    /// Gets available gain values, in tenths of a dB.
+    ///
+    /// eg 115 means 11.5 dB
+    ///
+    /// [`rtlsdr_get_tuner_gains()`]
+    pub fn get_tuner_gains(&mut self) -> Vec<i32> {
+        unsafe {
+            let num_gains = rtlsdr_get_tuner_gains(self.dev, core::ptr::null_mut());
+            // Unclear how this function can fail.
+            debug_assert!(num_gains >= 0);
+
+            let mut gains = vec![0; num_gains as usize];
+
+            if num_gains != 0 {
+                match rtlsdr_get_tuner_gains(self.dev, &mut gains[0]) {
+                    0 => {}
+                    len @ 1.. => {
+                        // Unclear how this function can fail.
+                        debug_assert!(len == num_gains);
+                        gains.resize(len as usize, 0);
+                    }
+                    err @ c_int::MIN..0 => {
+                        unreachable!(
+                            "rtlsdr_get_tuner_gains() failed unexpectedly with {:?}",
+                            ErrorCode::from_raw(err)
+                        );
+                    }
+                }
+            }
+
+            gains
+        }
+    }
+
+    /// Get actual gain the device is configured to, in tenths of a dB.
+    ///
+    /// eg 115 means 11.5 dB
+    ///
+    /// [`rtlsdr_get_tuner_gain()`]
+    pub fn get_tuner_gain(&mut self) -> Result<i32> {
+        unsafe {
+            let gain = rtlsdr_get_tuner_gain(self.dev);
+            if gain < 0 {
+                Err(RtlSdrError {
+                    what: "rtlsdr_get_tuner_gain",
+                    code: ErrorCode::Other,
+                })
+            } else {
+                Ok(gain)
+            }
+        }
     }
 }
 
