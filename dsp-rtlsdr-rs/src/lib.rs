@@ -511,30 +511,8 @@ impl RtlSdrDevice {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct XtalFrequencies {
-    /// The frequency value used to clock the RTL2832 in Hz
-    pub rtl: u32,
-
-    /// The frequency value used to clock the tuner IC in Hz
-    pub tuner: u32,
-}
-
-/// Getters
+/// EEPROM
 impl RtlSdrDevice {
-    /// [`rtlsdr_get_xtal_freq()`]
-    pub fn get_xtal_freq(&mut self) -> Result<XtalFrequencies> {
-        unsafe {
-            let mut xtal = XtalFrequencies { rtl: 0, tuner: 0 };
-            make_result(
-                "rtlsdr_get_xtal_freq",
-                rtlsdr_get_xtal_freq(self.dev, &mut xtal.rtl, &mut xtal.tuner),
-            )?;
-
-            Ok(xtal)
-        }
-    }
-
     /// Size of the EEPROM on an RTLSDR device, if any is present
     pub const EEPROM_SIZE: usize = 256;
 
@@ -585,6 +563,32 @@ impl RtlSdrDevice {
                     })
                 }
             }
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct XtalFrequencies {
+    /// The frequency value used to clock the RTL2832 in Hz
+    pub rtl: u32,
+
+    /// The frequency value used to clock the tuner IC in Hz
+    pub tuner: u32,
+}
+
+
+/// Getters
+impl RtlSdrDevice {
+    /// [`rtlsdr_get_xtal_freq()`]
+    pub fn get_xtal_freq(&mut self) -> Result<XtalFrequencies> {
+        unsafe {
+            let mut xtal = XtalFrequencies { rtl: 0, tuner: 0 };
+            make_result(
+                "rtlsdr_get_xtal_freq",
+                rtlsdr_get_xtal_freq(self.dev, &mut xtal.rtl, &mut xtal.tuner),
+            )?;
+
+            Ok(xtal)
         }
     }
 

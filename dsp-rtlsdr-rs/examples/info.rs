@@ -10,9 +10,24 @@ fn main() -> dsp_rtlsdr_rs::Result<()> {
                 println!("    + Manufacturer: {}", dev.maufacturer()?);
                 println!("    + Product:      {}", dev.product()?);
                 println!("    + Serial:       {}", dev.serial()?);
+                println!();
+
                 let xtal = dev.get_xtal_freq()?;
                 println!("    + RTL Freq:     {} Hz", xtal.rtl);
                 println!("    + Tuner Freq:   {} Hz", xtal.tuner);
+                println!();
+
+                println!("    + Tuner:        {:?}", dev.get_tuner_type()?);
+                println!(
+                    "    + Gain:         {:>4.1}",
+                    dev.get_tuner_gain()? as f32 / 10.
+                );
+                println!("    + Gains:");
+                for gain in dev.get_tuner_gains() {
+                    println!("        + {:>4.1}", gain as f32 / 10.);
+                }
+                println!();
+
                 println!();
             }
             Err(err) => {
