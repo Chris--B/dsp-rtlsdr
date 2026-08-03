@@ -169,6 +169,7 @@ unsafe extern "C" fn SDL_AppInit(
         }
 
         SDL_SetWindowResizable(window, true);
+        SDL_SetWindowFullscreen(window, opts.fullscreen);
 
         let texture = SDL_CreateTexture(
             renderer,
