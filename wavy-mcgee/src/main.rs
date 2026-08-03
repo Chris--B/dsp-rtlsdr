@@ -6,6 +6,7 @@ use just_sdl3::*;
 use rustfft::FftPlanner;
 
 use core::ffi::*;
+use std::sync::mpsc;
 
 use dsp_rtlsdr_rs::RtlSdrDevice;
 
@@ -69,19 +70,117 @@ fn main() {
     }
 }
 
+#[allow(dead_code)]
+#[derive(Copy, Clone, Debug)]
+enum SamplerAsks {
+    UpdateHeight(usize),
+    UpdateFfftWindow(usize),
+    Exit,
+}
+use SamplerAsks::*;
+
+struct SamplerThread {
+    _handle: std::thread::JoinHandle<()>,
+    ask_tx: mpsc::Sender<SamplerAsks>,
+    update_rx: mpsc::Receiver<PixelsUpdate>,
+}
+
+struct PixelsUpdate {
+    row: usize,
+    pixels: Vec<u8>,
+}
+
+fn spawn_sample_thread(mut sdr: RtlSdrDevice, opts: &Opts) -> SamplerThread {
+    let (update_tx, update_rx) = mpsc::channel::<PixelsUpdate>();
+    let (ask_tx, ask_rx) = mpsc::channel::<SamplerAsks>();
+    let mut fft_window = opts.fft_window;
+    let mut height = opts.height as usize;
+
+    let handle = std::thread::spawn(move || {
+        let mut planner = FftPlanner::new();
+        let mut row = 0;
+
+        'main: loop {
+            while let Ok(ask) = ask_rx.try_recv() {
+                match ask {
+                    UpdateHeight(h) => height = h,
+                    UpdateFfftWindow(w) => fft_window = w,
+                    Exit => break 'main,
+                }
+            }
+
+            // Get Samples
+            let mut samples8: Vec<u8> = vec![0; 2 * fft_window];
+            let n = sdr.read_samples(&mut samples8).unwrap_or(0) as usize;
+
+            // Get Samples as cf32
+            let mut samples: Vec<cf32> = vec![];
+            for (i, q) in samples8.drain(..n).tuples() {
+                samples.push(cf32::new(i as f32, q as f32));
+            }
+
+            // Do FFT
+            let fft = planner.plan_fft_forward(fft_window);
+            {
+                fft.process(&mut samples);
+
+                let mid = samples.len() / 2;
+                let (pos, neg) = samples.split_at_mut(mid);
+                // TODO: running mean to subtrack off DC spike
+                pos[0] = cf32::new(1., 1.);
+                pos.swap_with_slice(neg);
+            }
+
+            // Map FFT to Pixels
+            let mut pixels = vec![];
+            let (min, max) = samples
+                .iter()
+                .map(|iq| (iq.norm() + 1e-10).log10())
+                .minmax_by_key(|f| f.to_bits() as i32)
+                .into_option()
+                .unwrap();
+            for iq in &samples {
+                let r = (iq.norm().log10() - min) / (max - min);
+                let r = r * r;
+                let r = (255.0 * r) as u8;
+
+                // TODO: Make it colorful
+                let g = r;
+                let b = r;
+                pixels.push(r);
+                pixels.push(g);
+                pixels.push(b);
+            }
+
+            // Send them off
+            match update_tx.send(PixelsUpdate { row, pixels }) {
+                Ok(()) => {}
+                Err(err) => {
+                    eprintln!("[Sampler Thread] Failed to send update for row {row}: {err:#?}")
+                }
+            };
+
+            // Next row
+            row += 1;
+            row %= height;
+        }
+    });
+
+    SamplerThread {
+        _handle: handle,
+        ask_tx,
+        update_rx,
+    }
+}
+
 pub struct App {
     #[allow(unused)]
     window: *mut SDL_Window,
     renderer: *mut SDL_Renderer,
     texture: *mut SDL_Texture,
 
-    sdr: RtlSdrDevice,
+    sampler_thread: SamplerThread,
     opts: Opts,
-
-    planner: FftPlanner<f32>,
-    // Current row that we'll update
-    // TODO: Background thread
-    row: usize,
 }
 
 impl App {
@@ -112,6 +211,37 @@ unsafe extern "C" fn SDL_AppInit(
 ) -> SDL_AppResult {
     unsafe {
         let opts = Opts::parse();
+
+        // Init SDR
+        let mut sdr = match RtlSdrDevice::open(0) {
+            Ok(sdr) => sdr,
+            Err(err) => {
+                eprintln!();
+                eprintln!("Failed to open device. Are you sure it's plugged in and not in use?");
+                eprintln!("{err:#?}");
+                return SDL_APP_FAILURE;
+            }
+        };
+
+        // Configure device
+        {
+            if let Err(err) = sdr.set_sample_rate(opts.sample_rate) {
+                eprint!("set_sample_rate(): {err:#?}")
+            };
+            if let Err(err) = sdr.set_center_freq(opts.center_freq) {
+                eprint!("set_center_freq(): {err:#?}")
+            };
+
+            if opts.test {
+                if let Err(err) = sdr.set_testmode_enabled(true) {
+                    eprint!("set_testmode_enabled(): {err:#?}")
+                };
+                println!("Test mode is enabled");
+            }
+        }
+
+        // Start background thread
+        let sampler_thread = spawn_sample_thread(sdr, &opts);
 
         let mut window = SDL_NULL();
         let mut renderer = SDL_NULL();
@@ -159,45 +289,13 @@ unsafe extern "C" fn SDL_AppInit(
             );
         }
 
-        let mut sdr = match RtlSdrDevice::open(0) {
-            Ok(sdr) => sdr,
-            Err(err) => {
-                eprintln!();
-                eprintln!("Failed to open device. Are you sure it's plugged in and not in use?");
-                eprintln!("{err:#?}");
-                return SDL_APP_FAILURE;
-            }
-        };
-
-        // Configure device
-        {
-            if let Err(err) = sdr.set_sample_rate(opts.sample_rate) {
-                eprint!("set_sample_rate(): {err:#?}")
-            };
-            if let Err(err) = sdr.set_center_freq(opts.center_freq) {
-                eprint!("set_center_freq(): {err:#?}")
-            };
-
-            if opts.test {
-                if let Err(err) = sdr.set_testmode_enabled(true) {
-                    eprint!("set_testmode_enabled(): {err:#?}")
-                };
-                println!("Test mode is enabled");
-            }
-        }
-
-        let planner = FftPlanner::new();
-
         let app = App {
             window,
             renderer,
             texture,
 
-            sdr,
+            sampler_thread,
             opts,
-
-            planner,
-            row: 0,
         };
         App::new_into(app, appstate);
 
@@ -214,8 +312,11 @@ unsafe extern "C" fn SDL_AppEvent(
         let appstate = App::get(&mut appstate);
         let _ = appstate;
 
-        if (*event).r#type == SDL_EVENT_QUIT {
-            return SDL_APP_SUCCESS;
+        #[allow(clippy::single_match)]
+        match (*event).r#type {
+            SDL_EVENT_QUIT => return SDL_APP_SUCCESS,
+            // SDL_EVENT_KEY_UP => match (*event).key {}
+            _ => {}
         }
 
         SDL_APP_CONTINUE
@@ -229,49 +330,6 @@ unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult 
 
         let _now_ms: f64 = (SDL_GetTicks() as f64) / 1000.0;
 
-        // Do the FFT I guess
-        let mut wavy = vec![];
-        let rows_per_read = 1;
-        {
-            let mut samples8: Vec<u8> = vec![0; 2 * appstate.opts.fft_window * rows_per_read];
-            let n = appstate.sdr.read_samples(&mut samples8).unwrap_or(0) as usize;
-            let mut samples: Vec<cf32> = vec![];
-            for (i, q) in samples8.drain(..n).tuples() {
-                samples.push(cf32::new(i as f32, q as f32));
-            }
-
-            let fft = appstate.planner.plan_fft_forward(appstate.opts.fft_window);
-            for chunk in samples.chunks_exact_mut(appstate.opts.fft_window) {
-                fft.process(chunk);
-                let (pos, neg) = chunk.split_at_mut(chunk.len() / 2);
-                // TODO: running mean to subtrack off DC spike
-                pos[0] = cf32::new(1., 1.);
-                pos.swap_with_slice(neg);
-            }
-
-            let (min, max) = samples
-                .iter()
-                .map(|iq| (iq.norm() + 1e-10).log10())
-                .minmax_by_key(|f| f.to_bits() as i32)
-                .into_option()
-                .unwrap();
-
-            for (_y, chunk) in samples.chunks_exact(appstate.opts.fft_window).enumerate() {
-                for (_x, iq) in chunk.iter().enumerate() {
-                    let r = (iq.norm().log10() - min) / (max - min);
-                    let r = r * r;
-                    let r = (255.0 * r) as u8;
-
-                    // TODO: Make it colorful
-                    let g = r;
-                    let b = r;
-                    wavy.push(r);
-                    wavy.push(g);
-                    wavy.push(b);
-                }
-            }
-        }
-
         // Update our SDL window
         {
             let mut ok;
@@ -280,28 +338,22 @@ unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult 
             {
                 let mut pitch = 0_i32;
                 let mut p_pixels: *mut c_void = SDL_NULL();
+                // TODO: Lock sub-regions that are getting updated
                 ok = SDL_LockTexture(appstate.texture, SDL_NULL(), &mut p_pixels, &mut pitch);
                 if !ok {
                     SDL_Log(c"SDL_LockTexture() failed: %s\n".as_ptr(), SDL_GetError());
                     return SDL_APP_FAILURE;
                 }
+                let pitch = pitch as usize;
                 let pixels = core::slice::from_raw_parts_mut(
                     p_pixels as *mut u8,
-                    (pitch as usize) * (appstate.opts.height as usize),
+                    pitch * (appstate.opts.height as usize),
                 );
 
-                let begin = appstate.row * (pitch as usize);
-                let end = begin + wavy.len();
-                if end < pixels.len() {
-                    pixels[begin..end].copy_from_slice(&wavy);
-                    appstate.row += rows_per_read;
-                    appstate.row %= appstate.opts.height as usize;
-                } else {
-                    let n = pixels.len() - begin;
-                    let m = wavy.len() - n;
-                    pixels[begin..].copy_from_slice(&wavy[..n]);
-                    pixels[..m].copy_from_slice(&wavy[n..]);
-                    appstate.row = m / (pitch as usize);
+                while let Ok(update) = appstate.sampler_thread.update_rx.try_recv() {
+                    let begin = update.row * pitch;
+                    let end = begin + update.pixels.len();
+                    pixels[begin..end].copy_from_slice(&update.pixels);
                 }
 
                 SDL_UnlockTexture(appstate.texture);
@@ -349,6 +401,12 @@ unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult 
 unsafe extern "C" fn SDL_AppQuit(mut appstate: *mut c_void, _result: SDL_AppResult) {
     unsafe {
         let appstate = App::read(&mut appstate);
+
+        // Tell the background thread to exit and wait a little for it to do so.
+        let _ = appstate.sampler_thread.ask_tx.send(Exit);
+        #[allow(deprecated)]
+        std::thread::sleep_ms(250);
+
         drop(appstate);
     }
 }
