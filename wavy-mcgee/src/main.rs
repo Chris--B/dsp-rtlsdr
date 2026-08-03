@@ -12,10 +12,6 @@ use sampler_thread::*;
 #[allow(non_camel_case_types)]
 pub type cf32 = rustfft::num_complex::Complex<f32>;
 
-const fn SDL_NULL<T>() -> *mut T {
-    core::ptr::null_mut()
-}
-
 #[derive(Parser, Debug)]
 #[command(disable_help_flag = true)]
 pub struct Opts {
@@ -59,8 +55,8 @@ pub struct Opts {
 fn main() {
     unsafe {
         SDL_EnterAppMainCallbacks(
-            c_args::argc(),
-            c_args::argv(),
+            0,
+            SDL_NULL(),
             Some(SDL_AppInit),
             Some(SDL_AppIterate),
             Some(SDL_AppEvent),
