@@ -87,6 +87,8 @@ fn main() -> dsp_rtlsdr_rs::Result<()> {
             img.put_pixel(x as u32, y as u32, Rgb([r, r, r]));
         }
     }
+
+    println!("Saving to \"{}\"", opts.output);
     img.save(opts.output).unwrap();
 
     Ok(())

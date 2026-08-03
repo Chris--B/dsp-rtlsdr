@@ -313,7 +313,6 @@ dependencies = [
 [[package]]
 name = "dsp-tools"
 version = "0.1.0"
-source = "git+https://github.com/garbagetrash/dsp-tools.git#55f9a12ea7358e600cff479c9166c952d335fcff"
 dependencies = [
  "anyhow",
  "bytemuck",
