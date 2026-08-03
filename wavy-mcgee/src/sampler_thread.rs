@@ -10,8 +10,10 @@ use crate::cf32;
 #[allow(dead_code)]
 #[derive(Copy, Clone, Debug)]
 pub enum SamplerAsks {
-    UpdateHeight(usize),
-    UpdateFfftWindow(usize),
+    SetHeight(usize),
+    SetFfftWindow(usize),
+    SetRow(usize),
+    SetTestMode(bool),
     Exit,
 }
 pub use SamplerAsks::*;
@@ -40,8 +42,17 @@ pub fn spawn_sampler_thread(mut sdr: RtlSdrDevice, opts: &Opts) -> SamplerThread
         'main: loop {
             while let Ok(ask) = ask_rx.try_recv() {
                 match ask {
-                    UpdateHeight(h) => height = h,
-                    UpdateFfftWindow(w) => fft_window = w,
+                    SetHeight(h) => {
+                        if height != h {
+                            height = h;
+                            row = 0;
+                        }
+                    }
+                    SetFfftWindow(w) => fft_window = w,
+                    SetRow(r) => row = r,
+                    SetTestMode(enabled) => {
+                        let _ = sdr.set_testmode_enabled(enabled);
+                    }
                     Exit => break 'main,
                 }
             }

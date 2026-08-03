@@ -69,6 +69,12 @@ fn main() {
     }
 }
 
+fn SDL_LogError(label: &CStr) {
+    unsafe {
+        SDL_Log(c"%s: %s".as_ptr(), label.as_ptr(), SDL_GetError());
+    }
+}
+
 pub struct App {
     #[allow(unused)]
     window: *mut SDL_Window,
@@ -77,6 +83,7 @@ pub struct App {
 
     sampler_thread: SamplerThread,
     opts: Opts,
+    paused: bool,
 }
 
 impl App {
@@ -98,7 +105,7 @@ impl App {
     }
 }
 
-/* This function runs once at startup. */
+// TODO: Wrap in panic-catching code
 #[unsafe(no_mangle)]
 unsafe extern "C" fn SDL_AppInit(
     appstate: *mut *mut c_void,
@@ -155,16 +162,13 @@ unsafe extern "C" fn SDL_AppInit(
 
         if !SDL_CreateWindowAndRenderer(
             c"Wavy McGee".as_ptr(),
-            640,
-            480,
+            opts.width as i32,
+            opts.height as i32,
             0,
             &mut window,
             &mut renderer,
         ) {
-            SDL_Log(
-                c"Couldn't create window/renderer: %s".as_ptr(),
-                SDL_GetError(),
-            );
+            SDL_LogError(c"SDL_CreateWindowAndRenderer()");
             return SDL_APP_FAILURE;
         }
 
@@ -179,11 +183,7 @@ unsafe extern "C" fn SDL_AppInit(
             opts.height as i32,
         );
         if texture.is_null() {
-            SDL_Log(
-                c"Failed to create texture with format=%d\n%s".as_ptr(),
-                SDL_PIXELFORMAT_RGB24 as c_int,
-                SDL_GetError(),
-            );
+            SDL_LogError(c"Failed to create texture with format=SDL_PIXELFORMAT_RGB24\n%s");
         }
 
         let app = App {
@@ -193,6 +193,7 @@ unsafe extern "C" fn SDL_AppInit(
 
             sampler_thread,
             opts,
+            paused: false,
         };
         App::new_into(app, appstate);
 
@@ -200,6 +201,7 @@ unsafe extern "C" fn SDL_AppInit(
     }
 }
 
+// TODO: Wrap in panic-catching code
 #[unsafe(no_mangle)]
 unsafe extern "C" fn SDL_AppEvent(
     mut appstate: *mut c_void,
@@ -212,7 +214,108 @@ unsafe extern "C" fn SDL_AppEvent(
         #[allow(clippy::single_match)]
         match (*event).r#type {
             SDL_EVENT_QUIT => return SDL_APP_SUCCESS,
-            // SDL_EVENT_KEY_UP => match (*event).key {}
+
+            SDL_EVENT_KEY_UP => {
+                // sorry
+                #[repr(C)]
+                struct SDL_KeyboardEvent {
+                    /// SDL_EVENT_KEY_DOWN or SDL_EVENT_KEY_UP
+                    r#type: SDL_EventType,
+                    reserved: Uint32,
+                    /// In nanoseconds, populated using [`SDL_GetTicksNS()`]
+                    timestamp: Uint64,
+                    /// The window with keyboard focus, if any
+                    windowID: SDL_WindowID,
+                    /// The keyboard instance id, or 0 if unknown or virtual
+                    which: u32,
+                    /// SDL physical key code
+                    scancode: u32,
+                    /// SDL virtual key code
+                    key: u32,
+                    /// current key modifiers
+                    r#mod: u32,
+                    /// The platform dependent scancode for this event
+                    raw: Uint16,
+                    /// true if the key is pressed
+                    down: bool,
+                    /// true if this is a key repeat
+                    repeat: bool,
+                }
+                let event = core::ptr::read(event as *const SDL_KeyboardEvent);
+
+                match event.key {
+                    0x20 /*SDLK_SPACE*/ => {
+                        appstate.paused = !appstate.paused;
+                    }
+                    0x71 /*SDLK_Q*/ => return SDL_APP_SUCCESS,
+                    0x74 /*SDLK_T*/ => {
+                        appstate.opts.test = !appstate.opts.test;
+                        let _ = appstate.sampler_thread.ask_tx.send(SetTestMode(appstate.opts.test));
+                    }
+                    0x63 /*SDLK_C*/ => {
+                        // I guess just recreate it to clear it?
+                        let mut w = 0.;
+                        let mut h = 0.;
+                        SDL_GetTextureSize(appstate.texture, &mut w, &mut h);
+                        let new_texture = SDL_CreateTexture(
+                            appstate.renderer,
+                            SDL_PIXELFORMAT_RGB24,
+                            SDL_TEXTUREACCESS_STREAMING,
+                            w as i32,
+                            h as i32,
+                        );
+                        if new_texture.is_null() {
+                            SDL_Log(
+                                c"[NEW] SDL_CreateTexture() failed: %s\n".as_ptr(),
+                                SDL_GetError(),
+                            );
+                            return SDL_APP_CONTINUE;
+                        }
+
+                        SDL_DestroyTexture(appstate.texture);
+                        appstate.texture = new_texture;
+
+                        // Make sure we start drawing at the top tho
+                        let _ = appstate.sampler_thread.ask_tx.send(SetRow(0));
+                    }
+                    _ => {}
+                }
+            }
+
+            SDL_EVENT_WINDOW_RESIZED => {
+                SDL_ClearError();
+
+                let _new_width = (*event).window.data1;
+                let new_height = (*event).window.data2;
+
+                let mut old_w = 0.;
+                let mut old_h = 0.;
+                SDL_GetTextureSize(appstate.texture, &mut old_w, &mut old_h);
+                if (old_h as i32) != new_height {
+                    let new_texture = SDL_CreateTexture(
+                        appstate.renderer,
+                        SDL_PIXELFORMAT_RGB24,
+                        SDL_TEXTUREACCESS_STREAMING,
+                        old_w as i32, // Don't scale width
+                        new_height,
+                    );
+                    if new_texture.is_null() {
+                        SDL_Log(
+                            c"[NEW] SDL_CreateTexture() failed: %s\n".as_ptr(),
+                            SDL_GetError(),
+                        );
+                        return SDL_APP_CONTINUE;
+                    }
+
+                    SDL_DestroyTexture(appstate.texture);
+                    appstate.texture = new_texture;
+                }
+
+                let _ = appstate
+                    .sampler_thread
+                    .ask_tx
+                    .send(SetHeight(new_height as usize));
+            }
             _ => {}
         }
 
@@ -220,50 +323,56 @@ unsafe extern "C" fn SDL_AppEvent(
     }
 }
 
+// TODO: Wrap in panic-catching code
 #[unsafe(no_mangle)]
 unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult {
     unsafe {
         let appstate = App::get(&mut appstate);
 
-        let _now_ms: f64 = (SDL_GetTicks() as f64) / 1000.0;
-
         // Update our SDL window
         {
-            let mut ok;
             SDL_ClearError();
 
             {
                 let mut pitch = 0_i32;
                 let mut p_pixels: *mut c_void = SDL_NULL();
-                // TODO: Lock sub-regions that are getting updated
-                ok = SDL_LockTexture(appstate.texture, SDL_NULL(), &mut p_pixels, &mut pitch);
-                if !ok {
+
+                // TODO: Lock only sub-regions that are getting updated
+                if !SDL_LockTexture(appstate.texture, SDL_NULL(), &mut p_pixels, &mut pitch) {
                     SDL_Log(c"SDL_LockTexture() failed: %s\n".as_ptr(), SDL_GetError());
                     return SDL_APP_FAILURE;
                 }
+
                 let pitch = pitch as usize;
-                let pixels = core::slice::from_raw_parts_mut(
-                    p_pixels as *mut u8,
-                    pitch * (appstate.opts.height as usize),
-                );
+                let mut width = 0.0;
+                let mut height = 0.0;
+                if !SDL_GetTextureSize(appstate.texture, &mut width, &mut height) {
+                    SDL_Log(
+                        c"SDL_GetTextureSize() failed, somehow? %s\n".as_ptr(),
+                        SDL_GetError(),
+                    );
+                }
+                let pixels =
+                    core::slice::from_raw_parts_mut(p_pixels as *mut u8, pitch * height as usize);
 
                 while let Ok(update) = appstate.sampler_thread.update_rx.try_recv() {
-                    let begin = update.row * pitch;
-                    let end = begin + update.pixels.len();
-                    pixels[begin..end].copy_from_slice(&update.pixels);
+                    if appstate.paused {
+                        // While paused, discard samples
+                        continue;
+                    }
+                    // Resizing events can result in the sampler thread "rendering" rows that are now out of bounds
+                    // No-Op out of bounds pixels
+                    if update.row < height as usize {
+                        let begin = update.row * pitch;
+                        let end = begin + pitch;
+                        pixels[begin..end].copy_from_slice(&update.pixels);
+                    }
                 }
 
                 SDL_UnlockTexture(appstate.texture);
             }
 
-            ok = SDL_SetRenderDrawColorFloat(
-                appstate.renderer,
-                0.0,
-                0.0,
-                0.0,
-                SDL_ALPHA_OPAQUE_FLOAT,
-            );
-            if !ok {
+            if !SDL_SetRenderDrawColor(appstate.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE as u8) {
                 SDL_Log(
                     c"SDL_SetRenderDrawColorFloat() failed: %s\n".as_ptr(),
                     SDL_GetError(),
@@ -271,20 +380,17 @@ unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult 
                 return SDL_APP_FAILURE;
             }
 
-            ok = SDL_RenderClear(appstate.renderer);
-            if !ok {
+            if !SDL_RenderClear(appstate.renderer) {
                 SDL_Log(c"SDL_RenderClear() failed: %s\n".as_ptr(), SDL_GetError());
                 return SDL_APP_FAILURE;
             }
 
-            ok = SDL_RenderTexture(appstate.renderer, appstate.texture, SDL_NULL(), SDL_NULL());
-            if !ok {
+            if !SDL_RenderTexture(appstate.renderer, appstate.texture, SDL_NULL(), SDL_NULL()) {
                 SDL_Log(c"SDL_RenderTexture() failed: %s\n".as_ptr(), SDL_GetError());
                 return SDL_APP_FAILURE;
             }
 
-            ok = SDL_RenderPresent(appstate.renderer);
-            if !ok {
+            if !SDL_RenderPresent(appstate.renderer) {
                 SDL_Log(c"SDL_RenderPresent() failed: %s\n".as_ptr(), SDL_GetError());
                 return SDL_APP_FAILURE;
             }
@@ -294,6 +400,7 @@ unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult 
     }
 }
 
+// TODO: Wrap in panic-catching code
 #[unsafe(no_mangle)]
 unsafe extern "C" fn SDL_AppQuit(mut appstate: *mut c_void, _result: SDL_AppResult) {
     unsafe {
