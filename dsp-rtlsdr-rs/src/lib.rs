@@ -194,6 +194,8 @@ pub struct RtlSdrDevice {
     index: u32,
 }
 
+unsafe impl Send for RtlSdrDevice {}
+
 /// Basic Device managment
 impl RtlSdrDevice {
     /// [`rtlsdr_get_device_count()`]
