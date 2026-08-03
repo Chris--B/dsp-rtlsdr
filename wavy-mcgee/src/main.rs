@@ -88,12 +88,25 @@ pub struct App {
 
 impl App {
     /// Borrow back out of a callback's `appstate` pointer
-    fn get(appstate: &mut *mut c_void) -> &mut Self {
-        unsafe { &mut *(*appstate as *mut Self) }
+    fn get(appstate: &mut *mut c_void) -> Option<&mut Self> {
+        if !appstate.is_null() {
+            Some(unsafe { &mut *(*appstate as *mut Self) })
+        } else {
+            None
+        }
     }
 
-    unsafe fn read(appstate: &mut *mut c_void) -> Self {
-        unsafe { (*appstate as *mut Self).read() }
+    /// Borrow back out of a callback's `appstate` pointer
+    unsafe fn read(appstate: &mut *mut c_void) -> Option<Self> {
+        if !appstate.is_null() {
+            unsafe {
+                let t = Some((*appstate as *mut Self).read());
+                *appstate = SDL_NULL();
+                t
+            }
+        } else {
+            None
+        }
     }
 
     /// Allocate and store a new object into an `*appstate`
@@ -208,8 +221,9 @@ unsafe extern "C" fn SDL_AppEvent(
     event: *mut SDL_Event,
 ) -> SDL_AppResult {
     unsafe {
-        let appstate = App::get(&mut appstate);
-        let _ = appstate;
+        let Some(appstate) = App::get(&mut appstate) else {
+            return SDL_APP_FAILURE;
+        };
 
         #[allow(clippy::single_match)]
         match (*event).r#type {
@@ -327,7 +341,9 @@ unsafe extern "C" fn SDL_AppEvent(
 #[unsafe(no_mangle)]
 unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult {
     unsafe {
-        let appstate = App::get(&mut appstate);
+        let Some(appstate) = App::get(&mut appstate) else {
+            return SDL_APP_FAILURE;
+        };
 
         // Update our SDL window
         {
@@ -404,7 +420,9 @@ unsafe extern "C" fn SDL_AppIterate(mut appstate: *mut c_void) -> SDL_AppResult 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn SDL_AppQuit(mut appstate: *mut c_void, _result: SDL_AppResult) {
     unsafe {
-        let appstate = App::read(&mut appstate);
+        let Some(appstate) = App::read(&mut appstate) else {
+            return;
+        };
 
         // Tell the background thread to exit and wait a little for it to do so.
         let _ = appstate.sampler_thread.ask_tx.send(Exit);

@@ -61,6 +61,10 @@ pub fn spawn_sampler_thread(mut sdr: RtlSdrDevice, opts: &Opts) -> SamplerThread
             let mut samples8: Vec<u8> = vec![0; 2 * fft_window];
             let n = sdr.read_samples(&mut samples8).unwrap_or(0) as usize;
 
+            if n == 0 {
+                continue 'main;
+            }
+
             // Get Samples as cf32
             let mut samples: Vec<cf32> = vec![];
             for (i, q) in samples8.drain(..n).tuples() {
