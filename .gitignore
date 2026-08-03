@@ -3,3 +3,6 @@
 **.rom
 
 .DS_Store
+
+SteamDeck/*
+!SteamDeck/Dockerfile
