@@ -6,7 +6,7 @@ APP_NAME="wavy-mcgee"
 TARGET_ARCH="x86_64-unknown-linux-gnu"
 BUILD_DIR="target/AppDir"
 OUTPUT_DIR="SteamDeck"
-OUTPUT_APPIMAGE="${OUTPUT_DIR}/${APP_NAME}-x86_64.AppImage"
+OUTPUT_APPIMAGE="${OUTPUT_DIR}/Wavy McGee.AppImage"
 
 echo "==> Building ${APP_NAME} for ${TARGET_ARCH}..."
 

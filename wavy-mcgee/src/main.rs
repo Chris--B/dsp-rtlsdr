@@ -5,6 +5,7 @@ use dsp_rtlsdr_rs::RtlSdrDevice;
 use just_sdl3::*;
 
 use core::ffi::*;
+use std::ffi::CString;
 
 mod sampler_thread;
 use sampler_thread::*;
@@ -128,6 +129,17 @@ unsafe extern "C" fn SDL_AppInit(
                 eprintln!();
                 eprintln!("Failed to open device. Are you sure it's plugged in and not in use?");
                 eprintln!("{err:#?}");
+                let message = format!(
+                    "Failed to open device. Are you sure it's plugged in and not in use?\n{err}\0"
+                );
+                let message = CString::from_vec_with_nul_unchecked(message.into_bytes());
+
+                just_sdl3::ext::SDL_ShowSimpleMessageBox(
+                    SDL_MESSAGEBOX_ERROR,
+                    c"Wavy McGee Error",
+                    &message,
+                    SDL_NULL(),
+                );
                 return SDL_APP_FAILURE;
             }
         };
