@@ -5,6 +5,10 @@ all: help
 .PHONY: help
 help:
 
+.PHONY: clean
+clean:
+	cargo clean
+
 .PHONY: check
 check:
 	cargo clippy --all-targets --target=aarch64-apple-darwin
