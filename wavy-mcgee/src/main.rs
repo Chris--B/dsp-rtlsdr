@@ -4,6 +4,8 @@ use clap::Parser;
 use dsp_rtlsdr_rs::RtlSdrDevice;
 use just_sdl3::*;
 
+use just_sdl3::ext::{SDL_CreateWindowAndRenderer, SDL_SetAppMetadata, SDL_ShowSimpleMessageBox};
+
 use core::ffi::*;
 use std::ffi::CString;
 
@@ -134,7 +136,7 @@ unsafe extern "C" fn SDL_AppInit(
                 );
                 let message = CString::from_vec_with_nul_unchecked(message.into_bytes());
 
-                just_sdl3::ext::SDL_ShowSimpleMessageBox(
+                SDL_ShowSimpleMessageBox(
                     SDL_MESSAGEBOX_ERROR,
                     c"Wavy McGee Error",
                     &message,
@@ -167,11 +169,7 @@ unsafe extern "C" fn SDL_AppInit(
         let mut window = SDL_NULL();
         let mut renderer = SDL_NULL();
 
-        SDL_SetAppMetadata(
-            c"Wavy McGee".as_ptr(),
-            c"1.0".as_ptr(),
-            c"com.example.wavy-mcgee".as_ptr(),
-        );
+        SDL_SetAppMetadata(c"Wavy McGee", c"1.0", c"com.example.wavy-mcgee");
 
         if !SDL_Init(SDL_INIT_VIDEO) {
             SDL_Log(c"Couldn't initialize SDL: %s".as_ptr(), SDL_GetError());
@@ -179,7 +177,7 @@ unsafe extern "C" fn SDL_AppInit(
         }
 
         if !SDL_CreateWindowAndRenderer(
-            c"Wavy McGee".as_ptr(),
+            c"Wavy McGee",
             opts.width as i32,
             opts.height as i32,
             0,
