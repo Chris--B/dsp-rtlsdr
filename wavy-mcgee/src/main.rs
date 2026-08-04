@@ -26,9 +26,6 @@ pub struct Opts {
     #[arg(short, long, default_value_t = false)]
     pub test: bool,
 
-    #[arg(short, long, default_value = "wave.png")]
-    pub output: String,
-
     /// Number of samples used in each row of the phase raster
     #[arg(long, default_value = "1024")]
     pub fft_window: usize,
