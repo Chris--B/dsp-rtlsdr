@@ -6,3 +6,6 @@
 
 SteamDeck/*
 !SteamDeck/Dockerfile
+
+external/*
+!external/fetch.sh

@@ -40,9 +40,26 @@ build.steamdeck.local:
 deploy.steamdeck:
 	rsync -avz --progress SteamDeck/ deck@lil-titan:~/rtlsdr/
 
+ANDROID_TOOLCHAIN     := $(shell find "$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/" -maxdepth 2 -name bin)
+ANDROID_PLATFORM_ROOT := $(shell find "$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/" -maxdepth 2 -name sysroot)
 .PHONY: build.android
 build.android:
-	JUSTSDL_VENDORED=1 JUSTSDL_LIB_KIND="static" cargo build \
-		--bin wavy-mcgee \
-		--release \
-		--target=aarch64-linux-android
+	@echo "Using Android NDK at ANDROID_NDK_HOME=${ANDROID_NDK_HOME}"
+	env \
+	"CMAKE_TOOLCHAIN_FILE_aarch64-linux-android"=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake     \
+	"CC_aarch64_linux_android"="${ANDROID_TOOLCHAIN}/aarch64-linux-android31-clang"                          \
+	"CXX_aarch64_linux_android"="${ANDROID_TOOLCHAIN}/aarch64-linux-android31-clang++"                       \
+	"AR_aarch64_linux_android"="${ANDROID_TOOLCHAIN}/llvm-ar"                                                \
+	"CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"="${ANDROID_TOOLCHAIN}/aarch64-linux-android31-clang"         \
+	"SDL_ANDROID_PLATFORM_ROOT"="${ANDROID_PLATFORM_ROOT}"                                                   \
+	"SDL_ANDROID_PLATFORM_ANDROID_JAR"="${ANDROID_SDK_ROOT}/platforms/android-31/android.jar"                \
+	"ANDROID_ABI"=arm64-v8a                                                                                  \
+	"ANDROID_PLATFORM"=android-31                                                                            \
+	"TARGET_PKG_CONFIG_ALLOW_CROSS"=1 \
+	TARGET_PKG_CONFIG_SYSROOT_DIR="target/android_sysroot" \
+	"JUSTSDL_VENDORED"=1                                                                                     \
+	"JUSTSDL_LIB_KIND"="static"                                                                              \
+	cargo build                                                                                              \
+	    --bin wavy-mcgee                                                                                     \
+	    --release                                                                                            \
+	    --target=aarch64-linux-android                                                                       
