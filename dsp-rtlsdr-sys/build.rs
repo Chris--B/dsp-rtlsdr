@@ -1,7 +1,13 @@
 fn main() {
-    link_rtlsdr();
+    if needs_binaries() {
+        link_rtlsdr();
+        link_libusb_1_0();
+    } else {
+        println!("Skipping link step for non-binary build");
+    }
 }
 
+// librtlsdr is effectively a thin wrapper ontop of libusb-1.0 (not to be confused with libusb)
 fn link_rtlsdr() {
     if try_find_link_paths("DSP_RTLSDR_LIB") {
         println!(
@@ -13,18 +19,36 @@ fn link_rtlsdr() {
 
     if let Ok(pkg) = pkg_config::Config::new()
         .atleast_version("2.0")
-        // librtlsdr is a thin wrapper around libusb and life is easier if we don't dynamically link it.
-        .statik(true)
         .probe("librtlsdr")
     {
         println!("Found librltsdr lib with pkg-config: {pkg:#?}");
+    } else {
+        println!("cargo::rustc-link-lib=rtlsdr");
+        println!(
+            "cargo::warning=Did NOT find librltsdr search path. You may need to set DSP_RTLSDR_LIB if linking fails."
+        );
+    }
+}
+
+// libusb-1.0 lets us talk to USB devices. rtlsdr is built ontop of this, but we use some of its
+// functions for error handling explicitly.
+fn link_libusb_1_0() {
+    if try_find_link_paths("DSP_LIBUSB1_LIB") {
+        println!(
+            "Found libusb-1.0 libs with DSP_LIBUSB1_LIB: {:?}",
+            std::env::var("DSP_LIBUSB1_LIB")
+        );
         return;
     }
 
-    println!("cargo::rustc-link-lib=rtlsdr");
-    println!(
-        "cargo::warning=Did NOT find librltsdr search path. You may need to set DSP_RTLSDR_LIB if linking fails."
-    );
+    if let Ok(pkg) = pkg_config::Config::new().probe("libusb-1.0") {
+        println!("Found libusb-1.0 lib with pkg-config: {pkg:#?}");
+    } else {
+        println!("cargo::rustc-link-lib=libusb-1.0");
+        println!(
+            "cargo::warning=Did NOT find libusb-1.0 search path. You may need to set DSP_LIBUSB1_LIB if linking fails."
+        );
+    }
 }
 
 fn try_env_var(var: &str) -> Option<String> {
@@ -70,4 +94,28 @@ fn try_find_link_paths(lib_envvar: &str) -> bool {
     } else {
         false
     }
+}
+
+/// Checks whether this build job needs build artifacts or not.
+///
+/// For example: clippy & doc builds do not, but anything that produces a binary does.
+fn needs_binaries() -> bool {
+    use std::sync::Once;
+
+    let is_clippy = std::env::var("RUSTC_WORKSPACE_WRAPPER")
+        .or_else(|_| std::env::var("RUSTC_WRAPPER"))
+        .map(|v| v.contains("clippy"))
+        .unwrap_or(false);
+
+    // TODO: Detect doc builds
+
+    let should_build = !is_clippy;
+
+    static LOG_ONCE: Once = Once::new();
+    LOG_ONCE.call_once(|| {
+        println!("Building? {should_build}");
+        println!("is_clippy={is_clippy}");
+    });
+
+    should_build
 }

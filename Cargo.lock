@@ -146,7 +146,6 @@ dependencies = [
 name = "dsp-rtlsdr-sys"
 version = "0.1.0"
 dependencies = [
- "libusb-sys",
  "pkg-config",
 ]
 
@@ -200,16 +199,6 @@ name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
-
-[[package]]
-name = "libusb-sys"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c53b6582563d64ad3e692f54ef95239c3ea8069e82c9eb70ca948869a7ad767"
-dependencies = [
- "libc",
- "pkg-config",
-]
 
 [[package]]
 name = "num-complex"

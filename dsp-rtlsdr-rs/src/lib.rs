@@ -1,6 +1,5 @@
 pub use dsp_rtlsdr_sys as sys;
 
-use sys::libusb_sys::*;
 use sys::*;
 
 use core::ffi::{c_char, c_int};
