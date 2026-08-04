@@ -3,7 +3,7 @@ FROM --platform=${PLATFORM} rust:1-slim-bookworm
 
 # For building C code
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config build-essential cmake
+    pkg-config build-essential cmake wget file
 
 # For building SDL (See: https://github.com/libsdl-org/SDL/blob/main/docs/README-linux.md#build-dependencies)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,7 +20,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libusb-1.0-0-dev \
     librtlsdr-dev
 
+RUN cargo install cargo-appimage
+
+# Download appimagetool
+RUN wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-$(uname -m).AppImage -O /usr/local/bin/appimagetool
+RUN chmod +x /usr/local/bin/appimagetool
+# Path appimagetool magic byte: https://github.com/AppImage/pkg2appimage/issues/373#issuecomment-495754112
+RUN sed -i 's|AI\x02|\x00\x00\x00|' /usr/local/bin/appimagetool
+# Required inside Docker containers so AppImage tools don't attempt to use FUSE
+ENV APPIMAGE_EXTRACT_AND_RUN=1
+
 WORKDIR /workspace/app
 
 # CMD ["/bin/bash"]
-CMD ["make", "build.steamdeck.local"]
+CMD ["make", "-B", "build.steamdeck.local"]
