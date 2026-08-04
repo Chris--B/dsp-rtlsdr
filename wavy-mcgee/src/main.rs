@@ -2,9 +2,8 @@
 
 use clap::Parser;
 use dsp_rtlsdr_rs::RtlSdrDevice;
-use just_sdl3::*;
-
 use just_sdl3::ext::{SDL_CreateWindowAndRenderer, SDL_SetAppMetadata, SDL_ShowSimpleMessageBox};
+use just_sdl3::*;
 
 use core::ffi::*;
 use std::ffi::CString;

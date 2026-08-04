@@ -7,7 +7,6 @@ help:
 
 .PHONY: build.steamdeck
 build.steamdeck: SteamDeck/Dockerfile
-	cargo fetch
 	docker build -t steamdeck-dev SteamDeck
 	docker run -it \
 		-v "${PWD}":/workspace/app \
@@ -20,7 +19,11 @@ build.steamdeck.local:
 		--bin wavy-mcgee \
 		--release \
 		--target=x86_64-unknown-linux-gnu
-	./package-appimage.sh
+	@echo
+	./scripts/build-appimage.py --target=x86_64-unknown-linux-gnu --bin wavy-mcgee --output="SteamDeck/Wavy McGee.AppImage"
+	@echo
+	@echo "Files in SteamDeck/Wavy McGee.AppImage"
+	appimagetool --list "SteamDeck/Wavy McGee.AppImage"
 
 .PHONY: deploy.steamdeck
 deploy.steamdeck:
