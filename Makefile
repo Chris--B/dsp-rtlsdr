@@ -11,10 +11,10 @@ clean:
 
 .PHONY: check
 check:
-	cargo clippy --all-targets --target=aarch64-apple-darwin
-	cargo clippy --all-targets --target=x86_64-unknown-linux-gnu
-	cargo clippy --all-targets --target=aarch64-linux-android
-	cargo clippy --all-targets --target=x86_64-pc-windows-msvc
+	JUSTSDL_NO_LINK=1 cargo clippy --all-targets --target=aarch64-apple-darwin
+	JUSTSDL_NO_LINK=1 cargo clippy --all-targets --target=x86_64-unknown-linux-gnu
+	JUSTSDL_NO_LINK=1 cargo clippy --all-targets --target=aarch64-linux-android
+	JUSTSDL_NO_LINK=1 cargo clippy --all-targets --target=x86_64-pc-windows-msvc
 
 .PHONY: build.steamdeck
 build.steamdeck: SteamDeck/Dockerfile
