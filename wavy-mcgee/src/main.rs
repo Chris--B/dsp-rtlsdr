@@ -11,6 +11,8 @@ use std::ffi::CString;
 mod sampler_thread;
 use sampler_thread::*;
 
+mod colormap_tables;
+
 #[allow(non_camel_case_types)]
 pub type cf32 = rustfft::num_complex::Complex<f32>;
 
@@ -260,15 +262,18 @@ unsafe extern "C" fn SDL_AppEvent(
                 let event = core::ptr::read(event as *const SDL_KeyboardEvent);
 
                 match event.key {
-                    0x20 /*SDLK_SPACE*/ => {
+                    SDLK_SPACE => {
                         appstate.paused = !appstate.paused;
                     }
-                    0x71 /*SDLK_Q*/ => return SDL_APP_SUCCESS,
-                    0x74 /*SDLK_T*/ => {
+                    SDLK_Q => return SDL_APP_SUCCESS,
+                    SDLK_T => {
                         appstate.opts.test = !appstate.opts.test;
-                        let _ = appstate.sampler_thread.ask_tx.send(SetTestMode(appstate.opts.test));
+                        let _ = appstate
+                            .sampler_thread
+                            .ask_tx
+                            .send(SetTestMode(appstate.opts.test));
                     }
-                    0x63 /*SDLK_C*/ => {
+                    SDLK_C => {
                         // I guess just recreate it to clear it?
                         let mut w = 0.;
                         let mut h = 0.;
@@ -293,6 +298,9 @@ unsafe extern "C" fn SDL_AppEvent(
 
                         // Make sure we start drawing at the top tho
                         let _ = appstate.sampler_thread.ask_tx.send(SetRow(0));
+                    }
+                    SDLK_1 => {
+                        let _ = appstate.sampler_thread.ask_tx.send(CycleColorMap);
                     }
                     _ => {}
                 }

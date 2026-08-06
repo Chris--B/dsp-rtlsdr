@@ -14,6 +14,8 @@ pub enum SamplerAsks {
     SetFfftWindow(usize),
     SetRow(usize),
     SetTestMode(bool),
+    SetColorMap(usize),
+    CycleColorMap,
     Exit,
 }
 pub use SamplerAsks::*;
@@ -35,6 +37,22 @@ pub fn spawn_sampler_thread(mut sdr: RtlSdrDevice, opts: &Opts) -> SamplerThread
     let mut fft_window = opts.fft_window;
     let mut height = opts.height as usize;
 
+    use crate::colormap_tables::*;
+    let color_maps: &[&[[u8; 4]; 256]] = &[
+        &CMAP_MAGMA,
+        &CMAP_INFERNO,
+        &CMAP_PLASMA,
+        &CMAP_VIRIDIS,
+        &CMAP_CIVIDIS,
+        &CMAP_TWILIGHT,
+        &CMAP_TWILIGHT_2,
+        &CMAP_TURBO,
+        &CMAP_BERLIN,
+        &CMAP_MANAGUA,
+        &CMAP_VANIMO,
+    ];
+    let mut color_map_idx = 0;
+
     let handle = std::thread::spawn(move || {
         let mut planner = FftPlanner::new();
         let mut row = 0;
@@ -52,6 +70,14 @@ pub fn spawn_sampler_thread(mut sdr: RtlSdrDevice, opts: &Opts) -> SamplerThread
                     SetRow(r) => row = r,
                     SetTestMode(enabled) => {
                         let _ = sdr.set_testmode_enabled(enabled);
+                    }
+                    SetColorMap(idx) => {
+                        color_map_idx = idx;
+                        color_map_idx %= color_maps.len();
+                    }
+                    CycleColorMap => {
+                        color_map_idx += 1;
+                        color_map_idx %= color_maps.len();
                     }
                     Exit => break 'main,
                 }
@@ -97,8 +123,7 @@ pub fn spawn_sampler_thread(mut sdr: RtlSdrDevice, opts: &Opts) -> SamplerThread
                 let r = (255.0 * r) as u8;
 
                 // TODO: Make it colorful
-                let g = r;
-                let b = r;
+                let [r, g, b, _] = color_maps[color_map_idx][r as usize];
                 pixels.push(r);
                 pixels.push(g);
                 pixels.push(b);
