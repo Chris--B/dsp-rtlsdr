@@ -2,6 +2,11 @@ use dsp_rtlsdr_rs::*;
 
 fn main() -> dsp_rtlsdr_rs::Result<()> {
     let all_devices = all_rtlsdr_devices();
+
+    if all_devices.is_empty() {
+        println!("No devices");
+    }
+
     for (i, dev) in all_devices.into_iter().enumerate() {
         match dev {
             Ok(mut dev) => {
